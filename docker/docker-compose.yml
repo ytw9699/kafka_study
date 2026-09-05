@@ -1,0 +1,98 @@
+# KS-2 — 로컬 Kafka 인프라 (KRaft 모드)
+#
+# Postgres 는 여기 없다. KS-5(1단계)에서 추가한다.
+# 0단계는 Kafka 만 띄워 개념을 잡는 것이 목적이고,
+# 컨테이너를 한꺼번에 늘리면 "Kafka 가 안 뜬 건지 DB 가 안 뜬 건지" 디버깅 표면이 넓어진다.
+
+name: kafka-study
+
+services:
+  kafka:
+    image: apache/kafka:3.9.0
+    container_name: kafka
+    ports:
+      # EXTERNAL 리스너만 호스트로 노출한다.
+      # 29092(INTERNAL)와 9093(CONTROLLER)은 컨테이너 네트워크 안에서만 쓴다.
+      - "9092:9092"
+    environment:
+      # ── KRaft (Zookeeper 없음) ───────────────────────────────────────────
+      # 이 노드 하나가 broker 와 controller 를 겸한다. 로컬 학습용 단일 노드 구성.
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      # 클러스터 식별자. 고정해두지 않으면 재기동 때마다 새 클러스터가 되어
+      # 볼륨에 남은 로그와 충돌한다.
+      CLUSTER_ID: 1SqYLg_SQgWumRT2WEJ5Lw
+
+      # ── 리스너 3종 분리 ★ 가장 자주 막히는 지점 ──────────────────────────
+      #
+      # 브로커는 클라이언트에게 "나한테 접속하려면 이 주소로 오라"고 광고(advertise)한다.
+      # 이 주소가 틀리면 "연결은 되는 것 같은데 produce/consume 에서 실패"하는
+      # 애매한 증상이 난다.
+      #
+      #   INTERNAL   kafka:29092     같은 도커 네트워크 안의 컨테이너 (kafka-ui)
+      #   EXTERNAL   localhost:9092  호스트에서 도는 Spring 앱, CLI
+      #   CONTROLLER kafka:9093      KRaft 컨트롤러끼리 (브로커 자신)
+      #
+      # 컨테이너 안에서 localhost 는 "컨테이너 자신"을 가리키므로
+      # kafka-ui 가 localhost:9092 로 붙으면 실패한다.
+      # 반대로 호스트는 kafka 라는 호스트명을 모른다. 그래서 분리해야 한다.
+      #
+      # LISTENERS          = 실제로 열어두는 소켓 (0.0.0.0 = 모든 인터페이스)
+      # ADVERTISED_LISTENERS = 클라이언트에게 알려줄 접속 주소
+      #
+      # ⚠️ CONTROLLER 도 ADVERTISED 에 반드시 넣어야 한다.
+      #    빠뜨리면 Kafka 가 LISTENERS 쪽 값(0.0.0.0)을 가져다 쓰고
+      #    "advertised.listeners cannot use the nonroutable meta-address 0.0.0.0" 로 기동 실패한다.
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092,CONTROLLER://kafka:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+
+      # ── 단일 브로커용 설정 ───────────────────────────────────────────────
+      # 내부 토픽들의 기본 복제 계수는 3인데, 브로커가 1대뿐이라 1로 낮춘다.
+      # (운영이라면 3)
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      # 컨슈머 그룹 최초 리밸런싱 지연. 기본 3초인데 학습 중에는 답답하므로 0.
+      # (운영에서는 컨슈머가 순차 기동할 때 리밸런싱이 여러 번 도는 것을 막아준다)
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # 토픽 자동 생성 비활성화. 오타로 엉뚱한 토픽이 생기는 것을 막고,
+      # 파티션 수를 항상 명시적으로 정하게 한다.
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+
+      # ── 로그 저장 위치 ★ 이 프로젝트에서 가장 중요한 인프라 조건 ──────────
+      # named volume 에 둔다. docker compose down 후에도 토픽과 메시지가 유지되어야
+      # 5단계(원장 재구축)와 6단계(뒤늦게 합류한 컨슈머)가 성립한다.
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      # 호스트 8080 은 다른 앱이 쓰는 경우가 많아 8090 으로 노출한다.
+      # 컨테이너 내부 포트는 8080 그대로.
+      - "8090:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_CLUSTERS_0_NAME: kafka-study
+      # ★ 컨테이너 안에서 접속하므로 INTERNAL 리스너 주소를 쓴다.
+      #   여기에 localhost:9092 를 쓰면 kafka-ui 자기 자신에게 붙으려 해서 실패한다.
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      DYNAMIC_CONFIG_ENABLED: "true"
+
+volumes:
+  kafka-data:
+    name: kafka-study-data
