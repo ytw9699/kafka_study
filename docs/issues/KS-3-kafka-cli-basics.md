@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **타입** | EXPERIMENT |
-| **상태** | IN REVIEW |
+| **상태** | DONE |
 | **단계** | 0단계 — 인프라 |
 | **브랜치** | `experiment/KS-3-kafka-cli-basics` |
 | **PR** | [#12](https://github.com/ytw9699/kafka_study/pull/12) |
