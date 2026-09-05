@@ -9,8 +9,8 @@
 | 언어 | Kotlin (JDK 17, Gradle toolchain 고정) |
 | 프레임워크 | Spring Boot 3.x |
 | 메시징 | Spring Kafka (`spring-kafka`) |
-| 영속성 | Spring Data JPA + **PostgreSQL** (Docker, 서비스별 DB 분리) |
-| 빌드 | Gradle (Kotlin DSL), 멀티모듈 |
+| 영속성 | Spring Data JPA + **PostgreSQL** (Docker, `balancedb` / `frauddb` 분리) |
+| 빌드 | Gradle (Kotlin DSL), 멀티모듈 (`common` / `ledger-api` / `balance-worker` / `fraud-service`) |
 | 프론트 | Vue 3 (Composition API) + Vite |
 | 프론트 상태 | Pinia |
 | 차트 | Chart.js |
@@ -49,23 +49,24 @@ Kotlin은 클래스/프로퍼티가 기본 `final`인데 JPA는 프록시 생성
 처음에는 "학습용이니 인메모리 Map으로 충분"이라 생각했지만, 두 가지 이유로 DB를 쓴다.
 
 1. **현업 유사성** — 실제 컨슈머는 받은 이벤트를 DB에 쓴다. `@KafkaListener` 안에서 JPA 저장을 하는 코드가 실무 그 자체다.
-2. **4단계 replay 실험이 성립한다** — DB에 집계가 쌓인 상태에서 과거 이벤트를 다시 읽으면 **같은 주문이 두 번 집계되는 문제**가 실제로 터진다. 자바 `Map`이면 키가 알아서 덮어써져서 이 문제가 **보이지 않고 지나가버린다.**
+2. **5단계 replay 실험이 성립한다** — DB에 잔액이 쌓인 상태에서 과거 이벤트를 다시 읽으면 **포인트가 두 배가 되는 문제**가 실제로 터진다. 자바 `Map`이면 키가 알아서 덮어써져서 이 문제가 **보이지 않고 지나가버린다.**
 
 **왜 H2가 아니라 PostgreSQL인가**
 
 H2 파일 모드도 이 프로젝트 규모에서는 굴러간다. 그럼에도 Postgres를 고른 이유:
 
 1. **upsert 방언 차이 — 이 프로젝트에서 실제로 부딪힌다**
-   4단계 멱등성 구현의 핵심이 "집계를 있으면 update, 없으면 insert"인데 문법이 다르다.
+   잔액 갱신의 핵심이 "있으면 update, 없으면 insert"인데 문법이 다르다.
 
    | | 문법 |
    |---|---|
-   | PostgreSQL | `INSERT ... ON CONFLICT (product_name) DO UPDATE SET ...` |
-   | H2 | `MERGE INTO ... KEY(product_name) ...` |
+   | PostgreSQL | `INSERT ... ON CONFLICT (user_id) DO UPDATE SET ...` |
+   | H2 | `MERGE INTO ... KEY(user_id) ...` |
 
    동시성 있는 upsert는 결국 네이티브 쿼리를 쓰게 된다. **가장 값진 학습 구간에서 H2 전용 문법을 익히면 실무 전이가 안 된다.**
 
-2. **동시 접속 제한** — H2 embedded 파일 모드는 한 JVM만 파일을 열 수 있다(file lock). 5단계에서 컨슈머 인스턴스를 늘리는 실험을 stats로 확장하려면 막힌다. 우회하려면 H2 server 모드를 띄워야 하는데, 그러면 Postgres 컨테이너 하나 띄우는 것과 수고가 같아진다.
+2. **동시 접속 제한 — 이 프로젝트에서는 치명적이다** — H2 embedded 파일 모드는 한 JVM만 파일을 열 수 있다(file lock).
+   **4단계에서 `balance-worker` 인스턴스를 3개 띄우는 것이 프로젝트의 핵심 실험인데, H2로는 아예 불가능하다.** 우회하려면 H2 server 모드를 띄워야 하는데, 그러면 Postgres 컨테이너 하나 띄우는 것과 수고가 같아진다.
 
 3. **격리수준·락 동작 차이** — 동시 집계 갱신 시 경쟁 상태 처리가 다르다.
 
@@ -86,9 +87,9 @@ H2 파일 모드도 이 프로젝트 규모에서는 굴러간다. 그럼에도 
 | 상황 | 동작 | 실무성 |
 |---|---|---|
 | 평상시 | 커밋된 offset에서 **이어서** 읽기 | 실무 그대로 |
-| 3단계 (최초 합류) | `auto-offset-reset: earliest`로 전체 읽기 | 실무 그대로 (신규 컨슈머 투입) |
-| 3단계 반복 | `POST /api/stats/rebuild` — 집계 비우고 처음부터 | 실무의 "전체 재구축" |
-| 4단계 | `POST /api/stats/replay` — 집계 **유지한 채** 처음부터 | 실무 사고 재현 |
+| 최초 기동 | `auto-offset-reset: earliest`로 전체 읽기 | 실무 그대로 (신규 컨슈머 투입) |
+| 5단계 | `POST /api/balance/rebuild` — 잔액 비우고 처음부터 | 실무의 "전체 재구축" |
+| 5단계 | `POST /api/balance/replay` — 잔액 **유지한 채** 처음부터 | 실무 사고 재현 |
 
 **정상 동작과 재생을 구분해서 배우게 되므로 학습 효과가 오히려 더 좋다.**
 
@@ -96,11 +97,13 @@ H2 파일 모드도 이 프로젝트 규모에서는 굴러간다. 그럼에도 
 
 | 서비스 | DB | 이유 |
 |---|---|---|
-| order-service | `orderdb` | 주문 원본 저장 후 이벤트 발행 (실무 패턴) |
-| feed-service | 없음 (stateless) | Kafka → SSE 릴레이만 수행 |
-| stats-service | `statsdb` | replay/멱등성 실험의 무대 |
+| ledger-api | **없음** | Kafka가 원장의 원본. 발행 + SSE 중계만 수행 |
+| balance-worker | `balancedb` | 잔액 · 워커 배정 현황 · 멱등성 기록 |
+| fraud-service | `frauddb` | 이상 징후 상태 |
 
 Postgres 인스턴스는 하나지만 **DB를 분리**한다. MSA에서 서비스별 DB 분리는 기본 원칙이고, 이것도 학습 포인트다.
+
+**`ledger-api`가 DB를 갖지 않는 것이 의도적이다.** 요청을 DB에 저장하면 "로그가 원본이고 나머지는 파생 상태"라는 이 프로젝트의 전제가 흐려진다.
 
 ### 브로커: Kafka KRaft 모드
 
@@ -116,7 +119,7 @@ Postgres 인스턴스는 하나지만 **DB를 분리**한다. MSA에서 서비�
 **Kubernetes를 이 프로젝트에서 탈락시킨 이유**
 
 1. **주인공이 바뀐다** — 쿠버로 가면 시간의 대부분이 Kafka가 아니라 쿠버 자체(StatefulSet, PVC, Headless Service, 브로커 `advertised.listeners` 설정)에 들어간다. Kafka를 쿠버에 제대로 올리는 건 브로커 주소 광고 문제 때문에 의외로 난이도가 높고, 실무에서는 Strimzi 오퍼레이터를 쓰는데 그러면 이번엔 Strimzi CRD를 배우게 된다.
-2. **학습 리듬이 끊긴다** — 3~5단계 실험(컨슈머 인스턴스 껐다 켜기, 재생, 리밸런싱 관찰)은 **빠른 재기동 사이클**이 생명이다. 쿠버는 이미지 빌드 → 푸시 → 롤아웃 사이클이 매번 붙는다.
+2. **학습 리듬이 끊긴다** — 4~5단계 실험(컨슈머 인스턴스 껐다 켜기, 재생, 리밸런싱 관찰)은 **빠른 재기동 사이클**이 생명이다. 쿠버는 이미지 빌드 → 푸시 → 롤아웃 사이클이 매번 붙는다.
 
 "Kafka 이해"와 "쿠버 운영 경험"은 별개 항목이므로 따로 쌓는 것이 이득이다. **이 프로젝트의 범위에서 완전히 제외한다.**
 
@@ -125,9 +128,10 @@ Postgres 인스턴스는 하나지만 **DB를 분리**한다. MSA에서 서비�
 ### 프론트: Vue 3 + Vite
 
 **선택 이유**
-- SSE 구독의 생명주기(연결/해제/재연결)와 실시간 차트 갱신을 컴포넌트 단위로 깔끔하게 분리할 수 있다.
+- SSE 구독의 생명주기(연결/해제/재연결)와 **파티션 배정 현황 폴링**을 컴포넌트 단위로 분리할 수 있다.
 - Composition API의 반응형 상태가 "이벤트가 흘러들어와 화면이 갱신된다"는 이 프로젝트의 성격과 잘 맞는다.
-- Pinia로 주문 피드/집계 상태를 전역 관리하면, 3단계에서 **집계가 재생되며 차트가 채워지는 과정**을 자연스럽게 시각화할 수 있다.
+- Pinia로 **SSE로 받은 이벤트의 기대 잔액**과 **워커가 계산한 실제 잔액**을 각각 관리하면,
+  4단계에서 **둘이 어긋나는 순간**을 자연스럽게 시각화할 수 있다. 이것이 이 프로젝트의 결정적 장면이다.
 
 **전제**: 프론트는 어디까지나 **Kafka의 흐름을 눈으로 보는 창**이다. 화면은 최소로 유지하고, 프론트 작업이 Kafka 학습을 압도하지 않게 한다.
 
@@ -150,11 +154,12 @@ Postgres 인스턴스는 하나지만 **DB를 분리**한다. MSA에서 서비�
 | Kubernetes | Docker Compose | Kafka 학습이 쿠버 학습에 묻힘. 프로젝트 범위에서 제외 |
 | Java | Kotlin | 채용 시장 가산점, Kafka 코드는 사실상 동일 |
 | `ConcurrentHashMap` | JPA + DB | 멱등성 문제가 보이지 않고 지나감 |
-| H2 (파일/인메모리) | PostgreSQL | upsert 방언이 달라 4단계 학습이 실무로 전이되지 않음 |
+| H2 (파일/인메모리) | PostgreSQL | **파일 모드는 한 JVM만 열 수 있어 워커 3개 실험이 불가능.** upsert 방언도 다름 |
 | 인메모리 + 기동 시 `seekToBeginning` | 영속 DB + 명시적 재생 API | 실무 패턴이 아니고 "매번 전체를 읽는다"는 잘못된 감각을 남김 |
 | Zookeeper 모드 | KRaft 모드 | Kafka 4.0에서 Zookeeper 제거됨 |
 | Avro + Schema Registry | JSON | 디버깅 난이도 상승, 별도 심화 주제 |
-| Kafka Streams | 일반 `@KafkaListener` | 진입장벽이 높고 핵심(로그 재생)과 별개 |
+| Kafka Streams | 일반 `@KafkaListener` | 진입장벽이 높고 핵심과 별개 |
+| DB 큐 직접 구현 | Kafka | 학습 가치는 크지만 시간 비용이 큼. [05. 문서](05-why-not-diy.md)로 대신 |
 | 바닐라 JS | Vue 3 | SSE 생명주기 + 실시간 차트 상태 관리 |
 | Maven | Gradle (Kotlin DSL) | 최근 채용공고 선호도, Kotlin과의 정합성 |
 

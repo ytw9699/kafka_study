@@ -27,9 +27,9 @@ KS-{번호}-{영문-케밥케이스-요약}.md
 ```
 
 예시:
-- `KS-1-infra-docker-compose.md`
-- `KS-4-stats-service-replay.md`
-- `KS-7-consumer-error-handling-dlt.md`
+- `KS-2-infra-docker-compose.md`
+- `KS-14-ledger-api-publish.md`
+- `KS-3-kafka-cli-basics.md`
 
 ## 티켓 타입
 
@@ -66,7 +66,7 @@ KS-{번호}-{영문-케밥케이스-요약}.md
 | **타입** | FEAT |
 | **상태** | TODO |
 | **단계** | 0단계 — 인프라 |
-| **브랜치** | `feature/KS-1-infra-docker-compose` |
+| **브랜치** | `feature/KS-2-infra-docker-compose` |
 | **PR** | - |
 
 ## 배경
@@ -106,9 +106,9 @@ KS-{번호}-{영문-케밥케이스-요약}.md
 
 | | 형식 | 예시 |
 |---|---|---|
-| 브랜치 | `{타입소문자}/KS-{번호}-{요약}` | `feature/KS-1-infra-docker-compose` |
-| 커밋 | `{타입}: [KS-{번호}] {내용}` | `feat: [KS-1] Kafka KRaft + Kafka UI 컴포즈 구성` |
-| PR 제목 | `[KS-{번호}] {제목}` | `[KS-1] 로컬 Kafka 인프라 구성` |
+| 브랜치 | `{타입소문자}/KS-{번호}-{요약}` | `feature/KS-2-infra-docker-compose` |
+| 커밋 | `{타입}: [KS-{번호}] {내용}` | `feat: [KS-2] Kafka KRaft + Kafka UI 컴포즈 구성` |
+| PR 제목 | `[KS-{번호}] {제목}` | `[KS-2] 로컬 Kafka 인프라 구성` |
 
 PR 본문에는 티켓 문서 링크를 반드시 넣는다.
 

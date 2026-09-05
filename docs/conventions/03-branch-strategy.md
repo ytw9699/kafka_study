@@ -52,11 +52,11 @@ docs/KS-9-troubleshooting-advertised-listeners
 
 예시:
 ```
-feat: [KS-2] order-service 주문 생성 및 이벤트 발행 구현
+feat: [KS-14] ledger-api 거래 발행 및 SSE 게이트웨이 구현
 
-파티션 키를 userId로 잡아 같은 사용자의 주문 순서를 보장한다.
+파티션 키를 userId로 잡아 같은 사용자의 거래 순서를 보장한다.
 응답에 partition/offset을 포함시킨 것은 학습 목적 — 화면에서
-"내 주문이 어디 들어갔는지" 바로 확인하기 위함.
+"내 거래가 어느 파티션에 들어갔는지" 바로 확인하기 위함.
 ```
 
 ## PR 규칙
