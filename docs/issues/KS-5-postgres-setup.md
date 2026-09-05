@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **타입** | FEAT |
-| **상태** | IN REVIEW |
+| **상태** | DONE |
 | **단계** | 1단계 — Producer |
 | **브랜치** | `feature/KS-5-postgres-setup` |
 | **PR** | [#15](https://github.com/ytw9699/kafka_study/pull/15) |
