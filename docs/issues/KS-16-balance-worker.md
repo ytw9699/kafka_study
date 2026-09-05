@@ -3,10 +3,10 @@
 | | |
 |---|---|
 | **타입** | FEAT |
-| **상태** | TODO |
+| **상태** | IN REVIEW |
 | **단계** | 3단계 |
 | **브랜치** | `feature/KS-16-balance-worker` |
-| **PR** | - |
+| **PR** | [#20](https://github.com/ytw9699/kafka_study/pull/20) |
 
 ## 배경
 
@@ -21,14 +21,14 @@
 
 ## 작업 내용
 
-- [ ] `balance-worker` 의존성 추가 (JPA, PostgreSQL 드라이버)
-- [ ] `UserBalance` 엔티티 + Repository
-- [ ] upsert 구현 (`INSERT ... ON CONFLICT ... DO UPDATE`)
-- [ ] `@KafkaListener` (`balance-group`, `auto-offset-reset: earliest`)
-- [ ] 이벤트 타입 분기 — 적립 `+`, 사용 `−`
-- [ ] **잔액 부족 시 거절** 처리 + 거절 횟수 기록
-- [ ] `GET /api/balance` — 사용자별 잔액 조회
-- [ ] 단위 테스트 (분기 · 거절 · upsert)
+- [x] `balance-worker` 의존성 추가 (JPA, PostgreSQL 드라이버)
+- [x] `UserBalance` 엔티티 + Repository
+- [x] upsert 구현 (`INSERT ... ON CONFLICT ... DO UPDATE`)
+- [x] `@KafkaListener` (`balance-group`, `auto-offset-reset: earliest`)
+- [x] 이벤트 타입 분기 — 적립 `+`, 사용 `−`
+- [x] **잔액 부족 시 거절** 처리 + 거절 횟수 기록
+- [x] `GET /api/balance` — 사용자별 잔액 조회
+- [x] 단위 테스트 (분기 · 거절 · upsert)
 
 ## 상세 설계
 
@@ -66,15 +66,115 @@
 
 ## 완료 조건 (DoD)
 
-- [ ] 워커 기동 시 기존 이벤트를 읽어 잔액이 채워진다
-- [ ] 새 거래 발행 → 잔액에 즉시 반영
-- [ ] 잔액보다 큰 금액 사용 시 **거절**되고 잔액이 변하지 않는다
-- [ ] `GET /api/balance` 응답 확인
-- [ ] Kafka UI 에서 `balance-group` 이 보이고 `gateway-group` 과 offset 이 다르다
+- [x] 워커 기동 시 기존 이벤트를 읽어 잔액이 채워진다
+- [x] 새 거래 발행 → 잔액에 즉시 반영
+- [x] 잔액보다 큰 금액 사용 시 **거절**되고 잔액이 변하지 않는다
+- [x] `GET /api/balance` 응답 확인
+- [x] Kafka UI 에서 `balance-group` 이 보이고 `gateway-group` 과 offset 이 다르다
+
+## 검증 결과
+
+### 워커를 나중에 켜서 과거를 전부 읽는다 (`earliest`)
+
+`ledger-api` 만 띄워 18건을 쌓아둔 뒤 워커를 **처음** 기동:
+
+```json
+{
+  "balances": [
+    { "userId": "user-1", "balance": 70530, "appliedEvents": 6, "rejectedEvents": 0 },
+    { "userId": "user-2", "balance": 69370, "appliedEvents": 6, "rejectedEvents": 0 },
+    { "userId": "user-3", "balance": 75600, "appliedEvents": 6, "rejectedEvents": 0 }
+  ],
+  "totalApplied": 18, "totalRejected": 0
+}
+```
+
+**18건 전부 반영됐다.**
+
+### 실시간 반영 · 거절
+
+```
++10,000 적립 → user-1 잔액: 80,530 (applied=7)
+99,999,999 사용 시도 → 잔액: 80,530  거절=1  applied=7
+```
+
+```
+WARN  거절 userId=user-1 잔액=80530 요청=99999999 (부족)
+INFO  거절 p2#19 user-1 잔액=80530 요청=99999999
+```
+
+**거절되면 잔액은 변하지 않고 흔적만 남는다.**
+
+### 컨슈머 그룹별 독립 offset
+
+```
+gateway-group  p2  cur=20  end=20  lag=0
+balance-group  p2  cur=20  end=20  lag=0
+```
+
+각자 커밋한다. 같은 메시지를 **둘 다** 받았다.
+
+### 단위 테스트 5건
+
+```
+✅ 적립은 잔액을 늘린다
+✅ 사용은 잔액을 줄인다
+✅ 잔액이 부족하면 거절되고 잔액은 변하지 않는다
+✅ 사용자별로 잔액이 독립적이다
+✅ 순서가 바뀌면 결과가 달라진다        ← 4단계의 근거
+```
 
 ## 배운 것
 
-_(작업 후 작성)_
+### 파티션 키는 순서 보장뿐 아니라 **동시성 안전**도 준다
+
+처음에는 설계서대로 `INSERT ... ON CONFLICT` 원자적 upsert 를 쓰려 했다. 그런데 필요가 없었다.
+
+파티션 키가 `userId` 이고 **한 파티션은 한 워커만** 처리하므로,
+같은 사용자의 거래는 언제나 **한 워커가 순서대로** 다룬다. **경합 자체가 발생하지 않는다.**
+
+| 얻는 것 | 근거 |
+|---|---|
+| 순서 보장 | 파티션 내부 순서 + 단일 컨슈머 |
+| 동시성 안전 | 같은 키 = 같은 파티션 = 같은 워커 |
+
+**둘이 같은 뿌리에서 나온다.** "파티션 키를 잘 잡으면 락이 필요 없다"는 것이
+Kafka 기반 설계의 큰 이점이며, 이번에 코드로 확인했다.
+
+> 단, 4단계에서 키를 `RANDOM` 으로 바꾸면 이 전제가 깨진다.
+> 순서도 깨지고 **같은 사용자 행을 두 워커가 동시에 건드리는 lost update** 도 생긴다.
+> 잔액이 틀어지는 원인이 하나가 아니라 둘이 되는 셈이다.
+
+### 역직렬화 실패는 애플리케이션 코드로 잡을 수 없다 (TS-2)
+
+워커를 처음 켰을 때 잔액이 비어 있었다. [KS-3](KS-3-kafka-cli-basics.md) CLI 실습 때 넣은
+`{"n":1}` 같은 원시 JSON 이 토픽에 남아 있었고, `eventType` 이 없어 역직렬화가 실패했다.
+
+**리스너에 도달하기 전 단계에서 실패**하므로 `try-catch` 로 잡을 수 없다.
+컨슈머는 그 offset 에서 멈춰 무한 재시도한다 — **poison pill**.
+
+메시지 하나가 파티션 전체를 영구히 막는다는 것을 7단계 전에 미리 겪었다.
+→ [TS-2](../troubleshooting/TS-2-poison-pill.md)
+
+### 실습용 토픽과 애플리케이션 토픽을 나눴어야 했다
+
+CLI 실습과 앱이 같은 토픽을 공유한 것이 화근이었다.
+실무에서도 스키마가 다른 메시지를 한 토픽에 섞으면 컨슈머가 언제든 멈춘다.
+
+### `earliest` 는 "최초 기동"에서만 발동한다
+
+이번에 워커를 처음 켜면서 과거 18건을 읽는 것을 확인했다.
+다만 이것은 **커밋된 offset 이 없었기 때문**이고, 재기동하면 이어서 읽는다.
+→ [KS-18](KS-18-worker-restart-offset.md)에서 직접 확인한다.
+
+### 빈 파티션의 offset 표시가 그룹마다 달랐다
+
+```
+gateway-group  p0 cur=0   (latest 로 시작 → 위치 0 을 커밋)
+balance-group  p0 cur=-   (earliest 지만 읽은 게 없어 커밋 없음)
+```
+
+`-` 는 "아직 커밋한 적 없음"이다. 사소하지만 offset 이 **소비할 때 비로소 생긴다**는 것을 보여준다.
 
 ## 참고
 
