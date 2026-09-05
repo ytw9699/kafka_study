@@ -40,7 +40,7 @@
 
 | 티켓 | 제목 | 타입 | 단계 | 상태 |
 |---|---|---|---|---|
-| [KS-2](issues/KS-2-infra-docker-compose.md) | 로컬 Kafka 인프라 구성 | FEAT | 0단계 | TODO |
+| [KS-2](issues/KS-2-infra-docker-compose.md) | 로컬 Kafka 인프라 구성 | FEAT | 0단계 | DONE |
 | [KS-3](issues/KS-3-kafka-cli-basics.md) | Kafka CLI 실습 — 그룹·파티션·재생 확인 | EXPERIMENT | 0단계 | TODO |
 | [KS-4](issues/KS-4-gradle-multimodule.md) | Gradle 멀티모듈 뼈대 + 공통 이벤트 모델 | CHORE | 1단계 | TODO |
 | [KS-5](issues/KS-5-postgres-setup.md) | PostgreSQL 추가 및 DB 분리 | FEAT | 1단계 | TODO |
@@ -64,6 +64,6 @@
 
 | 문서 | 내용 |
 |---|---|
-| _(아직 없음)_ | |
+| [TS-1](troubleshooting/TS-1-advertised-listeners.md) | KRaft 브로커가 `advertised.listeners ... 0.0.0.0` 로 기동 실패 |
 
 > Kafka는 설정 하나 때문에 안 되는 경우가 많다. 한참 붙잡은 문제는 반드시 `troubleshooting/`에 남긴다.
