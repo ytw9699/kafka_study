@@ -60,16 +60,26 @@ Postgres는 아직 띄우지 않는다. Kafka만으로 개념을 먼저 잡는�
 | # | 작업 | 확인 방법 |
 |---|---|---|
 | 1-1 | Gradle 멀티모듈 뼈대 (`backend/`, Kotlin DSL, JDK 17 toolchain) | `./gradlew build` 성공 |
-| 1-2 | `common` 모듈 — `OrderCreatedEvent` 정의 | 컴파일 |
+| 1-2 | `common` 모듈 — `OrderCreatedEvent` / `OrderCanceledEvent` 정의 | 컴파일 |
 | 1-3 | Kotlin + JPA 플러그인 설정 (`kotlin-spring`, `kotlin-jpa`) | 엔티티 클래스가 `open`으로 컴파일됨 |
 | 1-4 | 컴포즈에 Postgres 추가 + `orderdb`/`statsdb` 생성 스크립트 | `psql`로 두 DB 접속 |
 | 1-5 | `Order` 엔티티 + Repository (`orderdb`) | 저장/조회 테스트 |
 | 1-6 | `POST /api/orders` — 저장 후 Kafka 발행 (키 = `userId`) | 201 응답 + Kafka UI에 메시지 |
 | 1-7 | 응답에 `partition` / `offset` 포함 | 응답 JSON 확인 |
 | 1-8 | 같은 `userId`로 반복 주문 | Kafka UI에서 **파티션 고정** 확인 |
+| 1-9 | `POST /api/orders/{id}/cancel` — `ORDER_CANCELED` 발행 | 200 응답 + Kafka UI에 이벤트 |
+| 1-10 | 생성·취소가 **같은 파티션**에 들어가는지 확인 | Kafka UI에서 파티션 번호 일치 |
+| 1-11 | `POST /api/orders/seed` — 여러 날짜에 걸친 시드 생성 | 40건 생성, 일부 취소 |
 
 > 1-3은 Kotlin+JPA의 알려진 마찰 지점이다. 엔티티를 `data class`로 만들지 않는다 —
 > `equals`/`hashCode`가 lazy 프록시와 충돌한다. `data class`는 이벤트 DTO에만 쓴다.
+
+> **1-10이 파티션 키 설계의 진짜 이유다.** 같은 주문의 생성·취소가 다른 파티션에 흩어지면
+> 컨슈머가 **취소를 생성보다 먼저 볼 수 있고**, 그러면 집계가 깨진다.
+> 두 이벤트 모두 키를 `userId`로 두어 같은 파티션에 순서대로 넣는다.
+
+> **1-11은 3단계의 재료를 만드는 장치다.** 일자별 매출 차트를 보려면 여러 날짜의 데이터가 필요한데,
+> 하루에 손으로 만들면 전부 오늘 날짜라 막대 하나로 끝난다.
 
 ---
 
@@ -82,12 +92,14 @@ Postgres는 아직 띄우지 않는다. Kafka만으로 개념을 먼저 잡는�
 | 2-3 | Vue 프로젝트 뼈대 + Vite 프록시 (3개 백엔드) | `npm run dev` 기동 |
 | 2-4 | `OrderForm` — 주문 생성 폼 | 폼 제출 → 201 |
 | 2-5 | `useSse` 컴포저블 (연결/해제) | 언마운트 시 연결 해제 확인 |
-| 2-6 | `OrderFeed` — 실시간 목록 + **partition/offset 뱃지** | 주문 넣으면 즉시 표시 |
-| 2-7 | 같은 `userId`로 반복 주문 | 뱃지의 **partition 번호 고정**이 화면에서 보임 |
+| 2-6 | `OrderFeed` — 실시간 목록 + **partition/offset 뱃지** + 생성/취소 구분 | 주문 넣으면 즉시 표시 |
+| 2-7 | 피드 행에서 취소 버튼 → 취소 이벤트가 피드에 추가로 나타남 | 같은 주문의 두 이벤트가 보임 |
+| 2-8 | 같은 `userId`로 반복 주문 | 뱃지의 **partition 번호 고정**이 화면에서 보임 |
 
-> 2-7이 2단계의 학습 지점이다. 파티션 개념을 **화면에서 직접** 체감한다.
+> 2-8이 2단계의 학습 지점이다. 파티션 개념을 **화면에서 직접** 체감한다.
+> 2-7에서 생성·취소가 **같은 파티션 번호**로 나란히 쌓이는 것도 함께 확인한다.
 
-**여기까지 끝나면 주문을 30건 이상 쌓아둔다.** 3단계의 재료다.
+**여기까지 끝나면 시드로 최근 7일에 걸쳐 40건 정도를 만들고 일부를 취소해둔다.** 3단계의 재료다.
 
 ---
 
@@ -99,17 +111,25 @@ Postgres는 아직 띄우지 않는다. Kafka만으로 개념을 먼저 잡는�
 | # | 작업 | 확인 방법 |
 |---|---|---|
 | 3-1 | `stats-service` 뼈대 + `statsdb` 연결 | 기동 성공 (아직 리스너 없음) |
-| 3-2 | `ProductStats` 엔티티 + upsert (`ON CONFLICT`) | 단위 테스트 |
-| 3-3 | `@KafkaListener` (`stats-group`, `earliest`) — **아직 기동하지 않는다** | 컴파일만 |
-| 3-4 | `GET /api/stats` + SSE `GET /api/stats/stream` | - |
-| 3-5 | `StatsPanel` — 총 매출 + 상품별 차트 (Chart.js) | - |
-| 3-6 | `app.replay.delay-ms` 설정 (기본 0, 데모 시 50) | - |
-| 3-7 | **최초 기동** — 주문 30건이 쌓인 상태에서 처음 켠다 | **차트가 0에서 시작해 과거 데이터로 채워짐** |
-| 3-8 | Kafka UI에서 `stats-group` offset 확인 | `feed-group`과 **offset이 다름** |
-| 3-9 | `POST /api/stats/rebuild` — 데모 반복용 | 몇 번이든 3-7을 재현 |
+| 3-2 | `DailyRevenue` / `ProductStats` 엔티티 + upsert (`ON CONFLICT`) | 단위 테스트 |
+| 3-3 | 두 이벤트 타입 분기 처리 (생성 `+`, 취소 `−`) | 단위 테스트 |
+| 3-4 | `@KafkaListener` (`stats-group`, `earliest`) — **아직 기동하지 않는다** | 컴파일만 |
+| 3-5 | `GET /api/stats` + SSE `GET /api/stats/stream` | - |
+| 3-6 | `StatsPanel` — **일자별 매출 막대 차트** (Chart.js) | - |
+| 3-7 | `app.replay.delay-ms` 설정 (기본 0, 데모 시 50) | - |
+| 3-8 | **최초 기동** — 이벤트가 쌓인 상태에서 처음 켠다 | **차트가 0에서 시작해 과거 데이터로 채워짐** |
+| 3-9 | ★ **취소된 주문이 생성일 매출에 남아 있는지** 확인 | 취소일에만 차감됨 |
+| 3-10 | `GET /api/orders`(DB 현재 상태)와 비교 | DB로는 재현 불가함을 확인 |
+| 3-11 | Kafka UI에서 `stats-group` offset 확인 | `feed-group`과 **offset이 다름** |
+| 3-12 | `POST /api/stats/rebuild` — 데모 반복용 | 몇 번이든 3-8을 재현 |
 
-> 3-8이 개념적 확인이다. 두 컨슈머 그룹이 **같은 토픽을 각자의 위치로** 읽고 있다는 것이 숫자로 보인다.
-> 3-9는 보험이자 실무 기능(집계 로직 변경 시 전체 재구축)이다.
+> **3-9와 3-10이 이 프로젝트 전체의 결론이다.**
+> DB의 `orders` 테이블은 취소된 주문을 `status = CANCELED`로만 알고 있어 **언제 취소됐는지 모른다.**
+> 이벤트 로그를 재생한 stats는 "3월 생성, 4월 취소"를 정확히 재현한다.
+> **"DB는 지금을 알고, 이벤트 로그는 과거를 안다"** 가 두 화면의 숫자 차이로 증명된다.
+
+> 3-11은 개념적 확인이다. 두 컨슈머 그룹이 **같은 토픽을 각자의 위치로** 읽고 있다는 것이 숫자로 보인다.
+> 3-12는 보험이자 실무 기능(집계 로직 변경 시 전체 재구축)이다.
 
 ---
 
@@ -120,12 +140,16 @@ Postgres는 아직 띄우지 않는다. Kafka만으로 개념을 먼저 잡는�
 | 4-1 | `ConsumerSeekAware` — `ConsumerSeekCallback` 보관 | - |
 | 4-2 | `POST /api/stats/replay` — 집계 **유지한 채** seek | **매출이 정확히 2배** 😱 |
 | 4-3 | 2배가 되는 과정을 화면에서 관찰 | 차트가 실시간으로 두 배로 점프 |
-| 4-4 | `processed_event` 테이블 추가 (`order_id` PK) | - |
-| 4-5 | 멱등 처리 — 이미 처리한 `orderId`는 skip | replay 해도 **매출 불변** |
+| 4-4 | `processed_event` 테이블 추가 (**`event_id` PK**) | - |
+| 4-5 | 멱등 처리 — 이미 처리한 `eventId`는 skip | replay 해도 **매출 불변** |
 | 4-6 | `rebuild` vs `replay` 차이 정리 | 문서화 |
 | 4-7 | CLI `kafka-consumer-groups --reset-offsets` 시도 | **활성 컨슈머가 있으면 거부**됨을 확인 |
 
 > 4-4를 **3단계에서 미리 만들지 않는다.** 4-2의 😱를 먼저 겪어야 이 테이블의 필요성이 몸에 남는다.
+
+> **PK가 `order_id`가 아니라 `event_id`인 것이 함정이다.** 같은 주문에 `CREATED`와 `CANCELED`
+> 두 이벤트가 있으므로, `order_id`를 키로 쓰면 **취소 이벤트가 "이미 처리함"으로 버려진다.**
+> 직접 `order_id`로 만들어보고 취소가 반영되지 않는 것을 확인한 뒤 고치면 학습 효과가 크다.
 > 4-7은 "왜 API로 만들었는가"의 근거를 직접 확인하는 작업이다.
 
 **여기서 `dev` → `main` 머지 + `step-4` 태그. 1차 완결.**
