@@ -16,15 +16,16 @@ Kafka의 기초를 **단계적으로, 눈으로 확인하며** 익히기 위한 
 | 문서 | 내용 |
 |---|---|
 | [문서 인덱스 · 티켓 보드](docs/README.md) | 전체 문서 목록과 `KS-N` 티켓 현황 |
-| [01. 기획서](docs/planning/01-planning.md) | 왜 Kafka인가, 시나리오, 0~7단계 학습 로드맵 |
-| [02. 설계서](docs/planning/02-architecture.md) | 시스템 구조, 토픽/파티션 설계, 이벤트 스키마, API 명세 |
+| [01. 기획서](docs/planning/01-planning.md) | 왜 Kafka인가, 시나리오, 학습 로드맵 |
+| [02. 설계서](docs/planning/02-architecture.md) | 전체 아키텍처, 흐름 시퀀스, 프론트/인프라 구조, 토픽·스키마·API |
 | [03. 기술 스택 결정서](docs/planning/03-tech-stack.md) | 스택 선택 근거, 탈락한 대안들 |
+| [04. 작업 로드맵](docs/planning/04-roadmap.md) | 단계별 세부 작업 분해 |
 
 작업 규칙: [문서 구조](docs/conventions/01-doc-structure.md) · [티켓 체계](docs/conventions/02-ticket.md) · [브랜치 전략](docs/conventions/03-branch-strategy.md)
 
 ## 기술 스택
 
-Kotlin (JDK 17) · Spring Boot 3.x · Spring Kafka · Spring Data JPA + H2(인메모리) · Gradle 멀티모듈
+Kotlin (JDK 17) · Spring Boot 3.x · Spring Kafka · Spring Data JPA + PostgreSQL · Gradle 멀티모듈
 Vue 3 + Vite · Pinia · Chart.js
 Apache Kafka (KRaft) · Kafka UI · Docker Compose
 
@@ -36,19 +37,21 @@ Apache Kafka (KRaft) · Kafka UI · Docker Compose
 
 ## 진행 상황
 
-| 단계 | 내용 | 티켓 | 상태 |
-|---|---|---|---|
-| - | 프로젝트 기획 및 운영 체계 수립 | [KS-1](docs/issues/KS-1-project-setup-docs.md) | ✅ DONE |
-| 0단계 | 인프라 — Kafka(KRaft) + Kafka UI | [KS-2](docs/issues/KS-2-infra-docker-compose.md) | TODO |
-| 1단계 | Producer — `order-service` | KS-3 | 예정 |
-| 2단계 | 실시간 Consumer + 프론트 — `feed-service` | KS-4 | 예정 |
-| 3단계 | **뒤늦게 합류하는 Consumer — `stats-service`** | KS-5 | 예정 |
-| 4단계 | Replay & 멱등성 | KS-6 | 예정 |
-| 5단계 | 파티션 & 리밸런싱 | KS-7 | 예정 |
-| 6단계 | 에러 처리 & DLT | KS-8 | 예정 |
-| 7단계 | Kubernetes 이관 (선택) | KS-9 | 예정 |
+**1차 목표는 4단계까지.** 여기까지만 해도 "왜 Kafka인가"에 완전히 답할 수 있다.
 
-3단계가 이 프로젝트의 하이라이트다.
+| 구간 | 단계 | 내용 | 티켓 |
+|---|---|---|---|
+| 준비 | - | 기획 · 설계 · 운영 체계 | KS-1, KS-10, KS-11 ✅ |
+| **1차** | 0단계 | 인프라 — Kafka(KRaft) + Kafka UI, CLI 실습 | KS-2, KS-3 |
+| **1차** | 1단계 | Producer — `order-service`, PostgreSQL | KS-4 ~ KS-6 |
+| **1차** | 2단계 | 실시간 Consumer + 프론트 — `feed-service`, Vue | KS-7 ~ KS-9 |
+| **1차** | 3단계 ★ | **뒤늦게 합류하는 Consumer — `stats-service`** | 미발급 |
+| **1차** | 4단계 | Replay & 멱등성 | 미발급 |
+| 2차 | 5단계 | 파티션 & 리밸런싱 (+ SSE의 한계 확인) | 미발급 |
+| 2차 | 6단계 | 에러 처리 & DLT | 미발급 |
+
+**3단계가 이 프로젝트의 목적지다.** 0~2단계는 3단계를 성립시키기 위한 준비다.
+4단계 완료 시 `main` 머지 + `step-4` 태그로 1차 완결.
 
 ## 브랜치
 

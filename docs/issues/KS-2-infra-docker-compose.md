@@ -21,12 +21,14 @@ Spring 위에서 시작하면 `@KafkaListener`가 알아서 해주는 것들 때
 ## 작업 내용
 
 - [ ] `docker/docker-compose.yml` 작성 — Kafka(KRaft 모드) + Kafka UI
+- [ ] 리스너 분리 설정 (`INTERNAL` / `EXTERNAL` / `CONTROLLER`)
+- [ ] Kafka 로그용 named volume 설정
 - [ ] 컨테이너 기동 및 Kafka UI 접속 확인 (`:8080`)
-- [ ] CLI로 `order-events` 토픽 생성 (파티션 3개)
-- [ ] 콘솔 producer / consumer로 메시지 주고받기
-- [ ] 파티션 키에 따라 메시지가 다른 파티션에 들어가는 것 확인
-- [ ] 컨슈머 그룹을 나눠서 각각 독립적으로 읽히는 것 확인
+- [ ] 호스트 CLI와 kafka-ui **양쪽 다** 브로커에 접속되는지 확인
 - [ ] `docs/planning/02-architecture.md`의 포트 표와 실제 구성 일치 확인
+
+> CLI 실습(토픽 생성, produce/consume, 컨슈머 그룹, 재소비)은 [KS-3](KS-3-kafka-cli-basics.md)에서 다룬다.
+> 이 티켓은 **인프라가 뜨는 것**까지가 범위다.
 
 ## 상세 설계
 
@@ -42,6 +44,9 @@ Spring 위에서 시작하면 `@KafkaListener`가 알아서 해주는 것들 때
 | `kafka` | 9092 | 브로커 (KRaft, 단일 노드) |
 | `kafka-ui` | 8080 | 토픽/메시지/컨슈머 그룹 조회 |
 
+**Postgres는 이 단계에서 띄우지 않는다.** [KS-5](KS-5-postgres-setup.md)에서 추가한다.
+컨테이너를 한꺼번에 늘리면 "Kafka가 안 뜬 건지 DB가 안 뜬 건지" 디버깅 표면이 넓어진다.
+
 ### 주의 지점: `advertised.listeners`
 
 Kafka 컨테이너를 띄울 때 가장 자주 막히는 부분.
@@ -52,24 +57,19 @@ Kafka 컨테이너를 띄울 때 가장 자주 막히는 부분.
 
 두 리스너를 분리해서 설정해야 한다. 여기서 막히면 `troubleshooting/`에 기록한다.
 
-### 토픽 설정
+### 볼륨 — 이 프로젝트에서 가장 중요한 인프라 조건
 
-| 항목 | 값 | 근거 |
-|---|---|---|
-| 이름 | `order-events` | |
-| 파티션 수 | 3 | 5단계 리밸런싱 실습을 위해 컨슈머 인스턴스 수 이상 |
-| 복제 계수 | 1 | 로컬 단일 브로커 |
+Kafka 로그를 named volume에 둔다. **`docker compose down` 후에도 토픽과 메시지가 유지되어야 한다.**
+이것이 깨지면 3단계(뒤늦게 합류한 컨슈머가 과거를 읽는다)가 성립하지 않는다.
 
 ## 완료 조건 (DoD)
 
 - [ ] `docker compose up -d` 한 번으로 Kafka + Kafka UI가 뜬다
-- [ ] 브라우저에서 `localhost:8080` 접속 시 브로커와 토픽이 보인다
-- [ ] 콘솔 producer로 넣은 메시지를 콘솔 consumer가 받는다
-- [ ] **같은 키로 보낸 메시지가 항상 같은 파티션에 들어가는 것**을 Kafka UI에서 확인
-- [ ] **서로 다른 컨슈머 그룹이 같은 메시지를 각각 받는 것**을 확인 (큐와 다른 지점)
-- [ ] `--from-beginning` 옵션으로 **이미 소비된 메시지를 다시 읽을 수 있는 것** 확인
+- [ ] 브라우저에서 `localhost:8080` 접속 시 브로커가 보인다
+- [ ] 호스트에서 CLI로 브로커에 접속된다 (`kafka-topics --list`)
+- [ ] `docker compose down` → `up` 후에도 토픽이 유지된다
 
-> 마지막 두 개가 이 단계의 진짜 목적이다. 단순히 "떴다"가 아니라 **Kafka가 큐와 다르다는 것을 CLI 수준에서 먼저 확인**한다.
+> Kafka가 큐와 다르다는 것의 확인은 [KS-3](KS-3-kafka-cli-basics.md)에서 한다.
 
 ## 배운 것
 
