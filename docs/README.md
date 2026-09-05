@@ -41,7 +41,7 @@
 | 티켓 | 제목 | 타입 | 단계 | 상태 |
 |---|---|---|---|---|
 | [KS-2](issues/KS-2-infra-docker-compose.md) | 로컬 Kafka 인프라 구성 | FEAT | 0단계 | DONE |
-| [KS-3](issues/KS-3-kafka-cli-basics.md) | Kafka CLI 실습 — 그룹·파티션·재생 확인 | EXPERIMENT | 0단계 | TODO |
+| [KS-3](issues/KS-3-kafka-cli-basics.md) | Kafka CLI 실습 — 그룹·파티션·재생 확인 | EXPERIMENT | 0단계 | DONE |
 | [KS-4](issues/KS-4-gradle-multimodule.md) | Gradle 멀티모듈 뼈대 + 공통 이벤트 모델 | CHORE | 1단계 | TODO |
 | [KS-5](issues/KS-5-postgres-setup.md) | PostgreSQL 추가 및 DB 분리 | FEAT | 1단계 | TODO |
 | [KS-14](issues/KS-14-ledger-api-publish.md) | ledger-api — 거래 발행 및 SSE 게이트웨이 | FEAT | 2단계 | TODO |
