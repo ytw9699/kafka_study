@@ -38,7 +38,7 @@ Apache Kafka (KRaft) · Kafka UI · Docker Compose
 
 | 단계 | 내용 | 티켓 | 상태 |
 |---|---|---|---|
-| - | 프로젝트 기획 및 운영 체계 수립 | [KS-1](docs/issues/KS-1-project-setup-docs.md) | IN REVIEW |
+| - | 프로젝트 기획 및 운영 체계 수립 | [KS-1](docs/issues/KS-1-project-setup-docs.md) | ✅ DONE |
 | 0단계 | 인프라 — Kafka(KRaft) + Kafka UI | [KS-2](docs/issues/KS-2-infra-docker-compose.md) | TODO |
 | 1단계 | Producer — `order-service` | KS-3 | 예정 |
 | 2단계 | 실시간 Consumer + 프론트 — `feed-service` | KS-4 | 예정 |
