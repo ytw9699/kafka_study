@@ -22,7 +22,7 @@ flowchart TB
         subgraph OS["order-service (:8081)"]
             OSC["OrderController"]
             OSP["OrderEventPublisher<br/>KafkaTemplate"]
-            OSD[("H2 mem<br/>orders")]
+            OSD[("Postgres<br/>orderdb")]
             OSC --> OSP
             OSC --> OSD
         end
@@ -34,7 +34,7 @@ flowchart TB
         subgraph SS["stats-service (:8083)"]
             SSL["@KafkaListener<br/>stats-group"]
             SSA["집계 로직"]
-            SSD[("H2 mem<br/>product_stats")]
+            SSD[("Postgres<br/>statsdb")]
             SSL --> SSA --> SSD
         end
     end
@@ -42,6 +42,7 @@ flowchart TB
     subgraph INF["인프라 — Docker Compose"]
         K["Apache Kafka (KRaft)<br/>:9092<br/>topic: order-events<br/>partitions 3 · key userId"]
         KUI["Kafka UI<br/>:8080"]
+        PG[("PostgreSQL<br/>:5432<br/>orderdb · statsdb")]
         KUI -.조회.-> K
     end
 
@@ -60,7 +61,7 @@ flowchart TB
 |---|---|---|
 | **프론트엔드** | Vue 3 + Vite + Pinia + Chart.js | 주문 생성 트리거, 이벤트 흐름의 시각화 창 |
 | **백엔드** | Kotlin + Spring Boot 3 × 3개 서비스 | Producer 1 + Consumer 2 |
-| **인프라** | Kafka(KRaft) + Kafka UI, Docker Compose | 이벤트 로그 저장소 + 내부 상태 관찰 도구 |
+| **인프라** | Kafka(KRaft) + Kafka UI + PostgreSQL, Docker Compose | 이벤트 로그 저장소 + 상태 저장소 + 관찰 도구 |
 
 ### 핵심 설계 포인트
 
@@ -78,7 +79,7 @@ flowchart TB
 
 ### order-service (:8081) — Producer
 
-- 주문 생성 요청을 받아 H2에 저장
+- 주문 생성 요청을 받아 Postgres(`orderdb`)에 저장
 - 저장된 주문을 `order-events` 토픽에 발행
 - 파티션 키는 `userId` → **같은 사용자의 주문은 같은 파티션 = 순서 보장**
 
@@ -88,15 +89,19 @@ flowchart TB
 
 - `order-events`를 `latest`부터 구독
 - 수신한 이벤트를 SSE로 연결된 브라우저에 즉시 push
-- **상태를 저장하지 않는다** (순수 릴레이)
+- **상태를 저장하지 않는다** (순수 릴레이). DB도 메모리 버퍼도 두지 않는다
+- SSE 연결 이전에 발생한 이벤트는 보이지 않는다 — 이것이 SSE의 특성이며, 과거를 보는 것은 `stats-service`의 역할이다
 - 5단계에서 인스턴스를 여러 개 띄워 파티션 분배·리밸런싱을 관찰하는 대상
 
 ### stats-service (:8083) — Consumer B, 매출 집계
 
-- `order-events`를 `earliest`부터 구독
-- 주문을 집계해 H2에 저장 (상품별 매출, 총 주문 수 등)
+- `order-events` 구독. **최초 기동 시에만** `auto-offset-reset: earliest`가 발동해 전체를 읽고, 이후 재기동은 커밋된 offset에서 **이어서** 읽는다 (실무 정상 동작)
+- 주문을 집계해 Postgres(`statsdb`)에 저장 (상품별 매출, 총 주문 수)
 - 집계 결과를 REST로 조회 + 갱신 시 SSE로 push
-- **처리한 `orderId`를 기록**해 replay 시 중복 집계를 방지 (4단계)
+- **명시적 재생 API**를 제공한다 (아래 8절 API 명세)
+  - `POST /api/stats/rebuild` — 집계를 비우고 처음부터 다시 읽기 (3단계 데모 반복용)
+  - `POST /api/stats/replay` — 집계를 **유지한 채** 처음부터 다시 읽기 (4단계 중복 재현용)
+- 4단계에서 **처리한 `orderId`를 기록**해 중복 집계를 방지한다
 
 ---
 
@@ -116,7 +121,7 @@ sequenceDiagram
 
     U->>FE: 주문 입력
     FE->>OS: POST /api/orders
-    OS->>OS: H2에 주문 저장
+    OS->>OS: Postgres에 주문 저장
     OS->>K: publish (key=userId)
     K-->>OS: partition, offset 반환
     OS-->>FE: 201 + partition/offset
@@ -126,7 +131,7 @@ sequenceDiagram
         FS-->>FE: SSE push → 피드에 즉시 표시
     and
         K->>SS: OrderCreatedEvent
-        SS->>SS: 집계 갱신 (H2)
+        SS->>SS: 집계 갱신 (Postgres)
         SS-->>FE: SSE push → 차트 갱신
     end
 ```
@@ -182,7 +187,7 @@ sequenceDiagram
     participant CLI as kafka-consumer-groups
     participant K as Kafka
     participant SS as stats-service
-    participant DB as H2 product_stats
+    participant DB as Postgres statsdb
 
     Note over SS,DB: 집계 완료 상태 (총 매출 3,820,000원)
 
@@ -294,7 +299,9 @@ frontend/
 
 ## 5. 인프라 구성
 
-### 컨테이너 구성 (0단계)
+### 컨테이너 구성
+
+**Postgres는 0단계가 아니라 1단계에서 추가한다.** 0단계는 Kafka만 띄워 CLI로 개념을 확인하는 것이 목적이고, 컨테이너를 한꺼번에 늘리면 "Kafka가 안 뜬 건지 DB가 안 뜬 건지" 디버깅 표면이 넓어진다.
 
 ```mermaid
 flowchart TB
@@ -306,10 +313,12 @@ flowchart TB
         subgraph NET["Docker network: kafka-study-net"]
             KAFKA["kafka<br/>KRaft 단일 노드<br/>내부 :29092 / 외부 :9092"]
             UI["kafka-ui<br/>:8080"]
+            PG[("postgres :5432<br/>orderdb · statsdb")]
         end
     end
 
     SPRING -->|"localhost:9092<br/>(EXTERNAL 리스너)"| KAFKA
+    SPRING -->|"localhost:5432"| PG
     UI -->|"kafka:29092<br/>(INTERNAL 리스너)"| KAFKA
     BROWSER --> SPRING
     BROWSER -->|":8080"| UI
@@ -338,11 +347,15 @@ Kafka 브로커는 클라이언트에게 "나한테 접속하려면 이 주소�
 
 ### 데이터 보존
 
-Kafka 로그는 named volume에 둔다. `docker compose down` 후에도 **토픽과 메시지가 유지**되어야 3단계(뒤늦게 합류한 컨슈머가 과거를 읽는다)가 성립한다.
+Kafka 로그와 Postgres 데이터 모두 named volume에 둔다.
+
+**`docker compose down` 후에도 토픽과 메시지가 유지되어야 한다.** 이것이 깨지면 3단계(뒤늦게 합류한 컨슈머가 과거를 읽는다)가 성립하지 않는다. 이 프로젝트에서 가장 중요한 인프라 조건이다.
 
 전체 초기화가 필요하면 `docker compose down -v`.
 
-> 반대로 **H2는 인메모리**라 서비스 재기동 시 비워진다. 이 비대칭이 의도적이다 — **"Kafka 로그는 남고, 서비스 상태는 로그로부터 재구축된다"** 를 매번 체험하게 된다.
+### DB 분리
+
+Postgres 인스턴스는 하나지만 **DB를 분리**한다 (`orderdb`, `statsdb`). MSA에서 서비스별 DB 분리는 기본 원칙이고, `docker/init/01-create-databases.sql`로 컨테이너 최초 기동 시 생성한다.
 
 ### 확장 (5단계)
 
@@ -355,6 +368,18 @@ SERVER_PORT=8093 ./gradlew :feed-service:bootRun
 ```
 
 같은 `feed-group`에 속하므로 파티션 3개가 인스턴스들에 나눠 배정된다.
+
+> **⚠️ 이때 화면이 깨진다 — 그리고 그것이 5단계의 학습 포인트다.**
+>
+> 브라우저는 세 인스턴스 중 **하나에만** SSE로 연결된다. 그 인스턴스는 자기가 배정받은 파티션의 이벤트만 받으므로, 주문을 10건 넣어도 화면에는 3건 정도만 보인다.
+>
+> | | 구조 | 레이어 |
+> |---|---|---|
+> | Kafka 컨슈머 그룹 | 일을 **나눠 갖는다** | 서버 ↔ 서버 |
+> | SSE 브로드캐스트 | 모두에게 **뿌린다** | 서버 ↔ 브라우저 |
+>
+> 여기서 Redis Pub/Sub(또는 브로드캐스트 전용 토픽)이 왜 필요한지가 드러난다.
+> **"Kafka는 SSE 연결 문제를 해결하는 도구가 아니다"** 가 실물로 확인되는 지점이다.
 
 ---
 
@@ -466,8 +491,8 @@ event: order
 data: { "orderId": "ORD-...", "userId": "user-42", "productName": "...", "totalPrice": 178000, "partition": 1, "offset": 17 }
 ```
 
-#### `GET /api/feed/recent` — 최근 수신 이벤트 (메모리 버퍼)
-SSE 연결 전에 받은 것들을 화면 초기 렌더링용으로 제공.
+> **`/api/feed/recent` 같은 조회 API는 두지 않는다.** feed-service는 상태를 갖지 않으므로 SSE 연결 이전 이벤트는 볼 수 없다.
+> 이것은 결함이 아니라 SSE의 특성이며, "과거를 읽는 것"은 Kafka를 구독하는 `stats-service`의 역할이다. 두 레이어를 섞지 않는다.
 
 ---
 
@@ -490,14 +515,40 @@ SSE 연결 전에 받은 것들을 화면 초기 렌더링용으로 제공.
 #### `GET /api/stats/stream` — 집계 갱신 실시간 push (SSE)
 과거 이벤트를 재생하며 집계가 채워지는 과정을 프론트에서 실시간으로 보기 위한 채널. **3단계 하이라이트의 시각화 수단.**
 
-#### `POST /api/stats/reset` — 집계 초기화 (학습용)
-4단계 replay 실험 시 집계를 비우고 처음부터 재구축하기 위한 엔드포인트.
+#### `POST /api/stats/rebuild` — 전체 재구축 (3단계 반복용)
+
+집계 테이블을 **비우고** offset을 처음으로 되감아 전체를 다시 읽는다.
+결과는 최초 기동 시와 동일하다. 3단계 데모를 몇 번이든 반복할 수 있게 하는 장치.
+
+> 실무에서도 하는 일이다 — 집계 로직 자체가 바뀌었을 때의 전체 재구축.
+
+#### `POST /api/stats/replay` — 재생 (4단계 실험용)
+
+집계 테이블을 **비우지 않고** offset만 처음으로 되감는다.
+→ 같은 주문이 두 번 집계되어 **매출이 정확히 2배가 된다.** 4단계의 무대.
+
+> **왜 CLI `--reset-offsets`가 아니라 API인가**
+>
+> `kafka-consumer-groups --reset-offsets`는 **해당 컨슈머 그룹에 활성 컨슈머가 있으면 거부된다.**
+> 즉 stats-service를 내려야 하는데, 그러면 재생을 시작할 때 서비스가 방금 뜬 상태라 화면에서 "집계가 2배로 뛰는 순간"을 볼 수 없다.
+> 서비스를 살려둔 채 재생하려면 애플리케이션 내부에서 seek해야 한다.
+>
+> CLI `--reset-offsets`는 4단계에서 **별도로** 다룬다 — 그 제약 자체와, 실무에서 갖는 의미를 확인하기 위해.
+
+**구현 노트**: `ConsumerSeekAware`의 `registerSeekCallback`에서 받은 `ConsumerSeekCallback`을 보관해두고, REST 요청 시 `seekToBeginning(topic, partition)`을 호출한다. 실제 seek은 **다음 poll 직전에** 컨슈머 스레드에서 적용된다. REST 스레드에서 컨슈머를 직접 건드리지 않는다 — `KafkaConsumer`는 thread-safe하지 않다.
+
+#### 재생 속도 조절 (학습용)
+
+`app.replay.delay-ms` (기본 `0`)
+
+수십 건을 재생하면 수백 밀리초 안에 끝나서 **차트가 채워지는 과정이 눈에 보이지 않는다.**
+3단계·4단계 데모 때만 `50` 정도를 주면 차트가 차오르는 것이 보인다. 프로덕션 코드에는 없을 설정이지만 이 프로젝트의 목적에는 맞는다.
 
 ---
 
 ## 9. 데이터 모델
 
-### order-service — `orders`
+### order-service — `orderdb.orders`
 
 | 컬럼 | 타입 | 비고 |
 |---|---|---|
@@ -507,9 +558,9 @@ SSE 연결 전에 받은 것들을 화면 초기 렌더링용으로 제공.
 | `quantity` | INT | |
 | `unit_price` | BIGINT | |
 | `total_price` | BIGINT | |
-| `created_at` | TIMESTAMP | |
+| `created_at` | TIMESTAMPTZ | |
 
-### stats-service — `product_stats`
+### stats-service — `statsdb.product_stats`
 
 | 컬럼 | 타입 | 비고 |
 |---|---|---|
@@ -517,27 +568,54 @@ SSE 연결 전에 받은 것들을 화면 초기 렌더링용으로 제공.
 | `order_count` | INT | |
 | `revenue` | BIGINT | |
 
-### stats-service — `processed_event`  *(4단계에서 추가)*
+집계 갱신은 upsert다. PostgreSQL 문법:
+
+```sql
+INSERT INTO product_stats (product_name, order_count, revenue)
+VALUES (:name, 1, :revenue)
+ON CONFLICT (product_name)
+DO UPDATE SET order_count = product_stats.order_count + 1,
+              revenue     = product_stats.revenue + :revenue;
+```
+
+### stats-service — `statsdb.processed_event`  *(4단계에서 추가)*
 
 | 컬럼 | 타입 | 비고 |
 |---|---|---|
 | `order_id` | VARCHAR | **PK — 멱등성의 핵심** |
-| `processed_at` | TIMESTAMP | |
+| `processed_at` | TIMESTAMPTZ | |
 
 > 이 테이블이 4단계의 답이다. replay로 같은 이벤트가 다시 와도 `order_id`가 이미 존재하면 집계를 건너뛴다.
 > **단, 3단계에서는 이 테이블을 일부러 만들지 않는다.** 4단계에서 집계가 2배가 되는 문제를 먼저 겪어봐야 이 테이블의 필요성이 몸으로 이해되기 때문.
 
 ---
 
-## 10. H2를 인메모리 모드로 쓰는 이유
+## 10. 저장소 정책 — 무엇이 남고 무엇이 재구축되는가
 
-`jdbc:h2:mem:...` (파일 모드 아님)
+| 대상 | 보존 | 이유 |
+|---|---|---|
+| **Kafka 로그** (named volume) | `docker compose down` 후에도 유지 | 3단계(뒤늦게 합류한 컨슈머가 과거를 읽는다)가 성립하려면 필수 |
+| **Postgres** (named volume) | 유지 | 실무와 동일. 컨슈머는 커밋된 offset에서 이어서 읽고, 상태도 남아 있다 |
 
-재기동하면 DB가 비워진다. 이것이 의도된 설계다.
-- stats-service를 재기동하면 집계가 사라지고 → **Kafka 재생으로 다시 채워진다**
-- "상태는 이벤트 로그로부터 재구축된다"는 이벤트 소싱의 기본 발상을 매 재기동마다 체험하게 됨
+전체 초기화가 필요하면 `docker compose down -v`.
 
-파일 모드로 두면 데이터가 남아서 이 그림이 흐려진다.
+### 상태 재구축은 "자동"이 아니라 "명시적"이다
+
+한때 H2 인메모리 + 기동 시마다 `seekToBeginning`을 검토했다. 재기동마다 상태가 비고 로그로부터 재구축되는 그림이 선명하기 때문이다. **그러나 이것은 실무 패턴이 아니다.**
+
+실무 컨슈머는 기동할 때마다 처음부터 읽지 않는다. 커밋된 offset부터 **이어서** 읽는다. 데이터가 수백만 건이면 매 기동마다 전체 재생은 애초에 불가능하다.
+
+그래서 이 프로젝트는 **정상 동작과 재생을 분리**한다.
+
+| 상황 | 읽기 시작점 | 집계 테이블 |
+|---|---|---|
+| 최초 기동 (3단계) | offset 0 (`auto-offset-reset: earliest`) | 비어 있음 |
+| 재기동 (평상시) | 커밋된 offset에서 이어서 | 유지 |
+| `POST /rebuild` | offset 0 (명시적 seek) | **비움** |
+| `POST /replay` | offset 0 (명시적 seek) | **유지** → 중복 발생 😱 |
+
+"상태는 이벤트 로그로부터 재구축된다"는 발상은 `rebuild`를 누를 때마다 체험한다.
+자동이 아니라 명시적이므로, **정상 동작에 대한 감각을 왜곡하지 않는다.**
 
 ---
 
@@ -547,6 +625,7 @@ SSE 연결 전에 받은 것들을 화면 초기 렌더링용으로 제공.
 |---|---|
 | Kafka (브로커) | 9092 |
 | Kafka UI | 8080 |
+| PostgreSQL | 5432 |
 | order-service | 8081 |
 | feed-service | 8082 |
 | stats-service | 8083 |
@@ -560,7 +639,9 @@ SSE 연결 전에 받은 것들을 화면 초기 렌더링용으로 제공.
 kafka_study/
 ├── docs/
 ├── docker/
-│   └── docker-compose.yml          # Kafka(KRaft) + Kafka UI
+│   ├── docker-compose.yml          # Kafka(KRaft) + Kafka UI + PostgreSQL
+│   └── init/
+│       └── 01-create-databases.sql # orderdb / statsdb 생성
 ├── backend/                        # Gradle 멀티모듈 (Kotlin DSL)
 │   ├── settings.gradle.kts
 │   ├── build.gradle.kts            # 공통 플러그인/의존성
