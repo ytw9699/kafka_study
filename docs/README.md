@@ -33,6 +33,7 @@
 | KS-7 | 파티션 분배와 리밸런싱 관찰 | EXPERIMENT | 5단계 | 예정 |
 | KS-8 | 컨슈머 에러 처리 및 DLT 구성 | FEAT | 6단계 | 예정 |
 | KS-9 | Kubernetes 이관 (선택) | FEAT | 7단계 | 예정 |
+| [KS-10](issues/KS-10-architecture-diagrams.md) | 전체 아키텍처 다이어그램 보강 | DOCS | - | IN REVIEW |
 
 > **예정** 상태는 번호만 예약해둔 것. 작업을 시작할 때 `issues/`에 티켓 문서를 만들고 `TODO`로 바꾼다.
 > 번호는 재사용하지 않는다.
