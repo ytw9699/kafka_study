@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import TxForm from './components/TxForm.vue'
 import LedgerFeed from './components/LedgerFeed.vue'
+import BalancePanel from './components/BalancePanel.vue'
 </script>
 
 <template>
@@ -16,12 +17,8 @@ import LedgerFeed from './components/LedgerFeed.vue'
     <main class="grid">
       <TxForm />
       <LedgerFeed />
-      <!-- ③ BalancePanel  — 3단계에서 추가 -->
+      <BalancePanel />
       <!-- ④ PartitionBoard — 4단계에서 추가 -->
-      <section class="panel placeholder">
-        <h2>③ 사용자별 잔액</h2>
-        <p>3단계 — <code>balance-worker</code> 구현 후 표시됩니다.</p>
-      </section>
       <section class="panel placeholder">
         <h2>④ 워커 · 파티션 배정</h2>
         <p>4단계 — 리밸런싱이 여기서 실시간으로 보입니다.</p>
