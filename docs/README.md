@@ -30,7 +30,7 @@
 | [KS-1](issues/KS-1-project-setup-docs.md) | 프로젝트 기획 및 운영 체계 수립 | DOCS | - | DONE |
 | [KS-10](issues/KS-10-architecture-diagrams.md) | 전체 아키텍처 다이어그램 보강 | DOCS | - | DONE |
 | [KS-11](issues/KS-11-design-finalize.md) | 설계 최종 확정 및 작업 분해 | DOCS | - | DONE |
-| [KS-12](issues/KS-12-scenario-cancellation.md) | 시나리오 보강 — 주문 취소와 일자별 매출 | DOCS | - | IN REVIEW |
+| [KS-12](issues/KS-12-scenario-cancellation.md) | 시나리오 보강 — 주문 취소와 일자별 매출 | DOCS | - | DONE |
 | [KS-2](issues/KS-2-infra-docker-compose.md) | 로컬 Kafka 인프라 구성 | FEAT | 0단계 | TODO |
 | [KS-3](issues/KS-3-kafka-cli-basics.md) | Kafka CLI 실습 — 큐와 다른 지점 확인 | EXPERIMENT | 0단계 | TODO |
 | [KS-4](issues/KS-4-gradle-multimodule.md) | Gradle 멀티모듈 뼈대 + 공통 이벤트 모델 | CHORE | 1단계 | TODO |
