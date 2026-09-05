@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **타입** | FEAT |
-| **상태** | IN REVIEW |
+| **상태** | DONE |
 | **단계** | 2단계 |
 | **브랜치** | `feature/KS-15-frontend-ledger-feed` |
 | **PR** | [#18](https://github.com/ytw9699/kafka_study/pull/18) |

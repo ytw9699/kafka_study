@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **타입** | FEAT |
-| **상태** | IN REVIEW |
+| **상태** | DONE |
 | **단계** | 2단계 |
 | **브랜치** | `feature/KS-14-ledger-api-publish` |
 | **PR** | [#17](https://github.com/ytw9699/kafka_study/pull/17) |
