@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **타입** | CHORE |
-| **상태** | IN REVIEW |
+| **상태** | DONE |
 | **단계** | 1단계 — Producer |
 | **브랜치** | `chore/KS-4-gradle-multimodule` |
 | **PR** | [#14](https://github.com/ytw9699/kafka_study/pull/14) |
