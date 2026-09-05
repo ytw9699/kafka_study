@@ -30,11 +30,12 @@
 | [KS-1](issues/KS-1-project-setup-docs.md) | 프로젝트 기획 및 운영 체계 수립 | DOCS | - | DONE |
 | [KS-10](issues/KS-10-architecture-diagrams.md) | 전체 아키텍처 다이어그램 보강 | DOCS | - | DONE |
 | [KS-11](issues/KS-11-design-finalize.md) | 설계 최종 확정 및 작업 분해 | DOCS | - | DONE |
+| [KS-12](issues/KS-12-scenario-cancellation.md) | 시나리오 보강 — 주문 취소와 일자별 매출 | DOCS | - | IN REVIEW |
 | [KS-2](issues/KS-2-infra-docker-compose.md) | 로컬 Kafka 인프라 구성 | FEAT | 0단계 | TODO |
 | [KS-3](issues/KS-3-kafka-cli-basics.md) | Kafka CLI 실습 — 큐와 다른 지점 확인 | EXPERIMENT | 0단계 | TODO |
 | [KS-4](issues/KS-4-gradle-multimodule.md) | Gradle 멀티모듈 뼈대 + 공통 이벤트 모델 | CHORE | 1단계 | TODO |
 | [KS-5](issues/KS-5-postgres-setup.md) | PostgreSQL 추가 및 DB 분리 | FEAT | 1단계 | TODO |
-| [KS-6](issues/KS-6-order-service-producer.md) | order-service — 주문 생성 및 이벤트 발행 | FEAT | 1단계 | TODO |
+| [KS-6](issues/KS-6-order-service-producer.md) | order-service — 주문 생성·취소 및 이벤트 발행 | FEAT | 1단계 | TODO |
 | [KS-7](issues/KS-7-feed-service-sse.md) | feed-service — 실시간 구독 및 SSE 중계 | FEAT | 2단계 | TODO |
 | [KS-8](issues/KS-8-frontend-scaffold.md) | Vue 프로젝트 뼈대 + 주문 생성 폼 | FEAT | 2단계 | TODO |
 | [KS-9](issues/KS-9-order-feed-view.md) | 실시간 주문 피드 화면 | FEAT | 2단계 | TODO |
