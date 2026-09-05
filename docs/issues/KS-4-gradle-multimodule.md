@@ -15,16 +15,16 @@
 
 ## 목표
 
-`./gradlew build`가 통과하는 멀티모듈 뼈대와, 세 서비스가 공유할 `OrderCreatedEvent`를 만든다.
+`./gradlew build`가 통과하는 멀티모듈 뼈대와, 세 서비스가 공유할 원장 이벤트 두 종류를 만든다.
 
 ## 작업 내용
 
 - [ ] `backend/settings.gradle.kts` — 4개 모듈 등록
 - [ ] 루트 `build.gradle.kts` — 공통 플러그인/의존성, JDK 17 toolchain 고정
 - [ ] `kotlin-spring`(allopen), `kotlin-jpa`(noarg) 플러그인 설정
-- [ ] `common` 모듈 — `OrderCreatedEvent` / `OrderCanceledEvent` data class
+- [ ] `common` 모듈 — `PointEarnedEvent` / `PointSpentEvent` data class
 - [ ] `eventType` 기반 다형 역직렬화 설정 (Jackson `@JsonSubTypes`)
-- [ ] `order-service` / `feed-service` / `stats-service` 빈 모듈 + 기동 확인
+- [ ] `ledger-api` / `balance-worker` / `fraud-service` 빈 모듈 + 기동 확인
 - [ ] Jackson `JavaTimeModule` 설정 (`Instant` 직렬화)
 
 ## 상세 설계
@@ -36,9 +36,9 @@ backend/
 ├── settings.gradle.kts
 ├── build.gradle.kts       # 공통 플러그인/의존성
 ├── common/                # 이벤트 DTO
-├── order-service/
-├── feed-service/
-└── stats-service/
+├── ledger-api/
+├── balance-worker/
+└── fraud-service/
 ```
 
 ### Kotlin + JPA 마찰 지점
@@ -51,12 +51,11 @@ backend/
 
 ### 이벤트 두 종류
 
-`order-events` 토픽에 `ORDER_CREATED`와 `ORDER_CANCELED`가 함께 흐른다.
+`ledger-events` 토픽에 `POINT_EARNED`와 `POINT_SPENT`가 함께 흐른다.
 컨슈머가 `eventType`으로 분기할 수 있어야 하므로 Jackson 다형 역직렬화를 설정한다.
 
-**취소 이벤트에도 `productName`, `totalPrice`를 중복해서 담는다.**
-컨슈머가 "그 주문이 얼마짜리였는지"를 알려고 원본 DB를 조회해야 한다면 서비스 경계가 무너진다.
-**이벤트는 자기 완결적이어야 한다.**
+**이벤트에 "잔액"을 담지 않는다.** 이벤트는 **일어난 사실**만 담고, 잔액은 이벤트를 순서대로 적용한 **결과**다.
+발행 시점에 잔액을 계산해 담으면 발행자가 순서를 알아야 하므로 **병렬 처리가 불가능**해진다.
 
 ### `common` 공유의 한계
 
