@@ -1,0 +1,70 @@
+:root {
+  --bg: #16181c;
+  --surface: #1e2127;
+  --surface-2: #272b33;
+  --border: #333844;
+  --text: #e6e8ec;
+  --muted: #8b93a1;
+  --accent: #3b7dd8;
+
+  /* 파티션별 색상 — 같은 userId 가 같은 색으로만 쌓이는 것이 한눈에 보이게 한다. */
+  --p0: #d88b3b;
+  --p1: #3bb0d8;
+  --p2: #9b6cd8;
+  --p3: #58c06a;
+
+  font-family: ui-sans-serif, system-ui, 'Apple SD Gothic Neo', sans-serif;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 20px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+h2 { font-size: 14px; margin: 0 0 12px; letter-spacing: 0.02em; }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+input, button {
+  font: inherit;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  padding: 6px 8px;
+}
+button { cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: 0.5; cursor: default; }
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+}
+
+hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+/* 파티션 뱃지 — 이 프로젝트에서 가장 중요한 시각 장치 */
+.badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #16181c;
+  background: var(--muted);
+}
+.badge[data-p="0"] { background: var(--p0); }
+.badge[data-p="1"] { background: var(--p1); }
+.badge[data-p="2"] { background: var(--p2); }
+.badge[data-p="3"] { background: var(--p3); }
