@@ -53,6 +53,12 @@ main ← dev ← {타입}/KS-{번호}-{요약}
 - `kotlin-spring`(allopen), `kotlin-jpa`(noarg) 플러그인 필수
 - DB는 **PostgreSQL**. `orderdb` / `statsdb`로 분리한다. H2를 쓰지 않는다 —
   4단계 upsert(`ON CONFLICT`) 학습이 H2 전용 문법으로 새면 실무 전이가 안 된다
+- 이벤트는 **두 종류**다 (`ORDER_CREATED` / `ORDER_CANCELED`). 둘 다 키는 `userId` —
+  같은 주문의 생성·취소가 **같은 파티션**에 들어가야 순서가 보장된다
+- **멱등 키는 `eventId`다. `orderId`가 아니다** — 같은 주문에 이벤트가 두 개 발생하므로
+  `orderId`로 하면 취소 이벤트가 버려진다
+- `orders` 테이블에 **`canceled_at`을 추가하지 않는다.** 이 테이블은 "DB는 지금만 안다"를
+  보여주는 대조군이다. 컬럼을 추가하면 프로젝트의 논증이 무너진다
 - **stats-service는 기동 시 자동으로 처음부터 읽지 않는다.** 커밋된 offset에서 이어서 읽는 것이
   실무 정상 동작이다. 전체 재생은 `POST /api/stats/rebuild` · `/replay`로 **명시적으로만** 한다
 

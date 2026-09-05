@@ -101,7 +101,7 @@ flowchart TB
 - **명시적 재생 API**를 제공한다 (아래 8절 API 명세)
   - `POST /api/stats/rebuild` — 집계를 비우고 처음부터 다시 읽기 (3단계 데모 반복용)
   - `POST /api/stats/replay` — 집계를 **유지한 채** 처음부터 다시 읽기 (4단계 중복 재현용)
-- 4단계에서 **처리한 `orderId`를 기록**해 중복 집계를 방지한다
+- 4단계에서 **처리한 `eventId`를 기록**해 중복 집계를 방지한다 (`orderId`가 아니다 — 같은 주문에 생성·취소 두 이벤트가 있다)
 
 ---
 
@@ -127,10 +127,10 @@ sequenceDiagram
     OS-->>FE: 201 + partition/offset
 
     par 두 컨슈머가 독립적으로 소비
-        K->>FS: OrderCreatedEvent
+        K->>FS: OrderCreated / OrderCanceled
         FS-->>FE: SSE push → 피드에 즉시 표시
     and
-        K->>SS: OrderCreatedEvent
+        K->>SS: OrderCreated / OrderCanceled
         SS->>SS: 집계 갱신 (Postgres)
         SS-->>FE: SSE push → 차트 갱신
     end
@@ -152,20 +152,20 @@ sequenceDiagram
 
     rect rgb(240, 240, 240)
         Note over OS,FS: ① stats-service는 아직 존재하지 않는다
-        OS->>K: 주문 이벤트 40건 발행
+        OS->>K: 생성·취소 이벤트 50건 발행
         K->>FS: 실시간 전달 (피드에 표시)
-        Note over K: offset 0~39 로그에 그대로 남아 있음
+        Note over K: offset 0~49 로그에 그대로 남아 있음
     end
 
     rect rgb(225, 240, 225)
         Note over SS: ② stats-service 최초 기동<br/>새 컨슈머 그룹 + auto-offset-reset=earliest
         SS->>K: subscribe (group=stats-group)
-        K-->>SS: offset 0 부터 40건 전부 전달
+        K-->>SS: offset 0 부터 50건 전부 전달
         loop 과거 이벤트 재생
             SS->>SS: 집계 누적
             SS-->>FE: SSE push
         end
-        Note over FE: 차트가 0에서 시작해<br/>과거 데이터로 채워지는 것이 보인다
+        Note over FE: 일자별 차트가 0에서 시작해<br/>과거 데이터로 채워진다<br/>(취소분은 취소일에만 차감)
     end
 
     rect rgb(240, 240, 240)
@@ -189,7 +189,7 @@ sequenceDiagram
     participant SS as stats-service
     participant DB as Postgres statsdb
 
-    Note over SS,DB: 집계 완료 상태 (총 매출 3,820,000원)
+    Note over SS,DB: 일자별 집계 완료 (총 매출 3,820,000원)
 
     CLI->>K: --reset-offsets --to-earliest<br/>--group stats-group
     K-->>CLI: stats-group offset → 0
@@ -200,11 +200,11 @@ sequenceDiagram
     Note over DB: 총 매출 7,640,000원 😱<br/>같은 주문이 두 번 집계됨
 
     Note over SS,DB: 해결 — processed_event 테이블 도입
-    SS->>DB: orderId 존재 여부 확인
-    alt 이미 처리한 orderId
+    SS->>DB: eventId 존재 여부 확인
+    alt 이미 처리한 eventId
         SS->>SS: skip
-    else 처음 보는 orderId
-        SS->>DB: 집계 반영 + orderId 기록
+    else 처음 보는 eventId
+        SS->>DB: 집계 반영 + eventId 기록
     end
 ```
 
@@ -224,9 +224,9 @@ sequenceDiagram
 flowchart LR
     subgraph APP["App.vue — 단일 화면 3분할"]
         direction TB
-        A["① OrderForm<br/>주문 생성"]
-        B["② OrderFeed<br/>실시간 주문 피드"]
-        C["③ StatsPanel<br/>매출 집계 + 차트"]
+        A["① OrderForm<br/>주문 생성 · 시드"]
+        B["② OrderFeed<br/>실시간 피드 (생성/취소)"]
+        C["③ StatsPanel<br/>일자별 매출 차트"]
     end
 
     subgraph STORE["Pinia Store"]
@@ -249,9 +249,9 @@ flowchart LR
 
 | 컴포넌트 | 역할 | 학습상 의미 |
 |---|---|---|
-| `OrderForm` | userId·상품·수량·단가 입력 후 주문 생성 | **같은 userId로 반복 주문**해서 파티션 고정을 확인하는 도구 |
-| `OrderFeed` | 수신 이벤트를 시간순 목록으로 표시. 각 행에 **partition / offset 뱃지** | 어느 파티션 몇 번 offset에 들어갔는지 눈으로 봄 |
-| `StatsPanel` | 총 매출·주문 수 + 상품별 매출 차트 | **3단계에서 과거 재생으로 채워지는 과정**을 보는 무대 |
+| `OrderForm` | userId·상품·수량·단가 입력 후 주문 생성, 시드 생성 버튼 | **같은 userId로 반복 주문**해서 파티션 고정을 확인하는 도구 |
+| `OrderFeed` | 수신 이벤트를 시간순 목록으로 표시. 각 행에 **partition / offset 뱃지**와 생성/취소 구분. 행에서 **취소 버튼** | 어느 파티션 몇 번 offset에 들어갔는지, 생성·취소가 같은 파티션에 나란히 들어가는지 눈으로 봄 |
+| `StatsPanel` | **일자별 매출 막대 차트** + 총 매출·취소 수 + 상품별 매출 | **3단계에서 과거 재생으로 채워지는 과정**을 보는 무대. 취소된 주문이 생성일 막대에 남아 있는 것이 핵심 |
 
 > `OrderFeed`의 partition/offset 뱃지는 실무에선 불필요하지만, 이 프로젝트에선 **파티션 개념을 화면에서 직접 체감하게 하는 핵심 장치**다. 같은 `userId`로 여러 건 주문하면 뱃지의 partition 번호가 고정되는 것이 보인다.
 
@@ -413,16 +413,18 @@ Kafka는 **파티션 내부에서만** 순서를 보장한다. 토픽 전체 순
 
 ## 7. 이벤트 스키마
 
-### OrderCreatedEvent
+`order-events` 토픽에 **두 종류**의 이벤트가 발행된다. `eventType`으로 구분한다.
 
-`order-events` 토픽에 발행되는 메시지 값.
+**메시지 키는 두 이벤트 모두 `userId`** — 같은 사용자의 이벤트가 같은 파티션에 들어가야 순서가 보장된다.
+
+### OrderCreatedEvent
 
 ```json
 {
   "eventId": "9f1c2e7a-4b8d-4d5e-9a1f-2c3b4d5e6f70",
   "eventType": "ORDER_CREATED",
-  "occurredAt": "2026-09-05T14:32:10.123Z",
-  "orderId": "ORD-20260905-0001",
+  "occurredAt": "2026-03-05T14:32:10.123Z",
+  "orderId": "ORD-20260305-0001",
   "userId": "user-42",
   "productName": "기계식 키보드",
   "quantity": 2,
@@ -431,21 +433,48 @@ Kafka는 **파티션 내부에서만** 순서를 보장한다. 토픽 전체 순
 }
 ```
 
+### OrderCanceledEvent
+
+```json
+{
+  "eventId": "b3d7f1a2-9c4e-4a6b-8d2f-1e5c7a9b3d40",
+  "eventType": "ORDER_CANCELED",
+  "occurredAt": "2026-04-02T09:15:00.000Z",
+  "orderId": "ORD-20260305-0001",
+  "userId": "user-42",
+  "productName": "기계식 키보드",
+  "totalPrice": 178000
+}
+```
+
+> 취소 이벤트에도 `productName`과 `totalPrice`를 **중복해서 담는다.**
+> 컨슈머가 "그 주문이 얼마짜리였는지"를 알려고 원본 DB를 조회해야 한다면 서비스 경계가 무너진다.
+> **이벤트는 자기 완결적이어야 한다** — 이것이 이벤트 설계의 기본 원칙이다.
+
+### 공통 필드
+
 | 필드 | 타입 | 설명 |
 |---|---|---|
-| `eventId` | UUID | 이벤트 고유 식별자 |
-| `eventType` | String | 이벤트 종류. 향후 확장 대비 |
-| `occurredAt` | ISO-8601 | 이벤트 발생 시각 |
-| `orderId` | String | 주문 식별자. **멱등 처리의 기준 키** |
+| `eventId` | UUID | 이벤트 고유 식별자. **멱등 처리의 기준 키** |
+| `eventType` | String | `ORDER_CREATED` \| `ORDER_CANCELED` |
+| `occurredAt` | ISO-8601 | 이벤트 발생 시각. **일자별 집계의 기준** |
+| `orderId` | String | 주문 식별자 |
 | `userId` | String | **파티션 키** |
-| `productName` | String | 상품명. 통계 집계 기준 |
-| `quantity` | Int | 수량 |
-| `unitPrice` | Long | 단가 (원) |
-| `totalPrice` | Long | 합계 = `quantity * unitPrice` |
 
-**메시지 키**: `userId` (String)
+### 멱등 키가 `orderId`가 아니라 `eventId`인 이유
 
-> `orderId`를 이벤트에 포함시키는 것이 4단계의 열쇠다. replay로 같은 메시지를 다시 받았을 때 "이미 처리한 주문인가?"를 판단할 기준이 된다.
+같은 `orderId`로 `CREATED`와 `CANCELED` **두 개의 이벤트**가 발생한다.
+`orderId`를 멱등 키로 쓰면 취소 이벤트가 "이미 처리한 주문"으로 판정되어 **버려진다.**
+
+→ 멱등 처리는 **이벤트 단위**로 한다. 4단계의 `processed_event` 테이블은 `event_id`를 PK로 갖는다.
+
+### 순서 보장이 실제로 필요한 지점
+
+같은 주문의 `CREATED`와 `CANCELED`가 **다른 파티션**에 들어가면, 컨슈머가 **취소를 생성보다 먼저 볼 수 있다.**
+그러면 "존재하지 않는 주문의 취소"를 처리하게 되어 집계가 깨진다.
+
+두 이벤트 모두 키를 `userId`로 두면 같은 파티션에 순서대로 들어가므로 이 문제가 발생하지 않는다.
+**파티션 키 설계가 추상적 원칙이 아니라 구체적 필요임이 여기서 드러난다.**
 
 ---
 
@@ -477,14 +506,50 @@ Kafka는 **파티션 내부에서만** 순서를 보장한다. 토픽 전체 순
 
 > 응답에 `partition`/`offset`을 담는 것은 학습 목적이다. 실무에서는 불필요하지만, 이 프로젝트에서는 "내 주문이 어느 파티션 몇 번 offset에 들어갔는지"를 화면에서 바로 보는 것이 이해에 크게 도움된다.
 
+#### `POST /api/orders/{orderId}/cancel` — 주문 취소
+
+주문 상태를 `CANCELED`로 바꾸고 `ORDER_CANCELED` 이벤트를 발행한다.
+키는 생성 때와 동일하게 `userId` — **같은 파티션에 들어가야 순서가 보장된다.**
+
+응답 `200 OK`:
+```json
+{
+  "orderId": "ORD-20260305-0001",
+  "status": "CANCELED",
+  "publishedToPartition": 1,
+  "offset": 53
+}
+```
+
+이미 취소된 주문이면 `409 Conflict`. **이벤트를 중복 발행하지 않는다.**
+
 #### `GET /api/orders` — 주문 목록 조회
-DB에 저장된 원본 주문 목록. Kafka 재생 결과와 비교하는 기준선.
+
+DB에 저장된 원본 주문 목록(현재 상태). Kafka 재생 결과와 **비교하는 기준선**이다.
+
+> 이 API의 진짜 용도는 [기획서 5절](01-planning.md)의 논증을 실물로 보여주는 것이다.
+> 여기서는 취소된 주문이 `status = CANCELED`로만 보인다 — **언제 취소됐는지 알 수 없다.**
+> 반면 stats-service는 이벤트 로그로부터 "3월에 생성, 4월에 취소"를 정확히 재현한다.
+
+#### `POST /api/orders/seed` — 시드 데이터 생성 (학습용)
+
+```json
+{ "days": 7, "count": 40, "cancelRatio": 0.2 }
+```
+
+최근 N일에 걸쳐 주문을 생성하고 일부를 취소한다.
+
+> **왜 필요한가**: 일자별 매출 차트를 보려면 **여러 날짜에 걸친** 데이터가 있어야 한다.
+> 하루에 손으로 만들면 전부 오늘 날짜라 차트가 막대 하나로 끝난다.
+> 3단계의 재료(30건 이상)를 만드는 용도이기도 하다. 프로덕션에는 없을 API지만 이 프로젝트의 목적에는 맞는다.
 
 ---
 
 ### feed-service (:8082)
 
 #### `GET /api/feed/stream` — 실시간 주문 피드 (SSE)
+
+생성·취소 **두 종류** 이벤트를 모두 중계한다. `eventType`으로 구분한다.
 
 ```
 event: order
@@ -502,15 +567,25 @@ data: { "orderId": "ORD-...", "userId": "user-42", "productName": "...", "totalP
 
 ```json
 {
+  "totalRevenue": 3820000,
   "totalOrders": 42,
-  "totalRevenue": 3_820_000,
-  "processedEventCount": 42,
+  "totalCanceled": 8,
+  "processedEventCount": 50,
+  "daily": [
+    { "date": "2026-03-05", "created": 5, "canceled": 0, "revenue":  890000 },
+    { "date": "2026-03-06", "created": 3, "canceled": 0, "revenue":  534000 },
+    { "date": "2026-04-02", "created": 2, "canceled": 1, "revenue":  178000 }
+  ],
   "byProduct": [
     { "productName": "기계식 키보드", "orderCount": 12, "revenue": 1068000 },
     { "productName": "모니터암",     "orderCount": 30, "revenue": 2752000 }
   ]
 }
 ```
+
+`daily`가 이 프로젝트의 핵심 결과물이다.
+**3월 5일 매출에 취소된 주문이 그대로 남아 있고, 취소는 4월 2일에만 반영된다.**
+`orders` 테이블 조회로는 재현할 수 없는 값이다.
 
 #### `GET /api/stats/stream` — 집계 갱신 실시간 push (SSE)
 과거 이벤트를 재생하며 집계가 채워지는 과정을 프론트에서 실시간으로 보기 위한 채널. **3단계 하이라이트의 시각화 수단.**
@@ -558,34 +633,68 @@ data: { "orderId": "ORD-...", "userId": "user-42", "productName": "...", "totalP
 | `quantity` | INT | |
 | `unit_price` | BIGINT | |
 | `total_price` | BIGINT | |
+| `status` | VARCHAR | `ACTIVE` \| `CANCELED` — **현재 상태만 담는다** |
 | `created_at` | TIMESTAMPTZ | |
+
+> 이 테이블에는 **언제 취소됐는지가 없다.** 의도적이다.
+> [기획서 5절](01-planning.md)의 논증 — "DB는 지금을 알고, 이벤트 로그는 과거를 안다" — 을 실물로 보여주는 대조군이다.
+> `canceled_at` 컬럼을 추가하고 싶어지는 그 충동이 바로 "이력을 DB에 넣기 시작하는" 지점이며, 그 끝이 Kafka다.
+
+### stats-service — `statsdb.daily_revenue` ★
+
+이 프로젝트의 핵심 산출물.
+
+| 컬럼 | 타입 | 비고 |
+|---|---|---|
+| `stat_date` | DATE | PK — 이벤트의 `occurredAt` 기준 |
+| `created_count` | INT | 그날 생성된 주문 수 |
+| `canceled_count` | INT | 그날 취소된 주문 수 |
+| `revenue` | BIGINT | 그날 생성 금액 합 − 그날 취소 금액 합 |
+
+집계 규칙:
+
+| 이벤트 | 반영 위치 | 연산 |
+|---|---|---|
+| `ORDER_CREATED` | `occurredAt`의 **생성일** | `revenue += totalPrice`, `created_count += 1` |
+| `ORDER_CANCELED` | `occurredAt`의 **취소일** | `revenue -= totalPrice`, `canceled_count += 1` |
+
+**취소는 생성일 매출을 건드리지 않는다.** 취소된 날에만 차감된다.
+
+집계 갱신은 upsert다. PostgreSQL 문법:
+
+```sql
+INSERT INTO daily_revenue (stat_date, created_count, canceled_count, revenue)
+VALUES (:date, :created, :canceled, :revenue)
+ON CONFLICT (stat_date)
+DO UPDATE SET created_count  = daily_revenue.created_count  + :created,
+              canceled_count = daily_revenue.canceled_count + :canceled,
+              revenue        = daily_revenue.revenue        + :revenue;
+```
+
+취소 이벤트는 `:created = 0`, `:canceled = 1`, `:revenue = -totalPrice`로 호출한다.
+
 
 ### stats-service — `statsdb.product_stats`
 
 | 컬럼 | 타입 | 비고 |
 |---|---|---|
 | `product_name` | VARCHAR | PK |
-| `order_count` | INT | |
-| `revenue` | BIGINT | |
-
-집계 갱신은 upsert다. PostgreSQL 문법:
-
-```sql
-INSERT INTO product_stats (product_name, order_count, revenue)
-VALUES (:name, 1, :revenue)
-ON CONFLICT (product_name)
-DO UPDATE SET order_count = product_stats.order_count + 1,
-              revenue     = product_stats.revenue + :revenue;
-```
+| `order_count` | INT | 취소 시 감소 |
+| `revenue` | BIGINT | 취소 시 감소 |
 
 ### stats-service — `statsdb.processed_event`  *(4단계에서 추가)*
 
 | 컬럼 | 타입 | 비고 |
 |---|---|---|
-| `order_id` | VARCHAR | **PK — 멱등성의 핵심** |
+| `event_id` | UUID | **PK — 멱등성의 핵심** |
+| `order_id` | VARCHAR | 조회용 |
+| `event_type` | VARCHAR | 조회용 |
 | `processed_at` | TIMESTAMPTZ | |
 
-> 이 테이블이 4단계의 답이다. replay로 같은 이벤트가 다시 와도 `order_id`가 이미 존재하면 집계를 건너뛴다.
+> **PK가 `order_id`가 아니라 `event_id`인 것이 중요하다.**
+> 같은 `orderId`로 `CREATED`와 `CANCELED` 두 이벤트가 발생하므로, `order_id`를 멱등 키로 쓰면
+> **취소 이벤트가 "이미 처리한 주문"으로 판정되어 버려진다.** 멱등 처리는 **이벤트 단위**로 한다.
+
 > **단, 3단계에서는 이 테이블을 일부러 만들지 않는다.** 4단계에서 집계가 2배가 되는 문제를 먼저 겪어봐야 이 테이블의 필요성이 몸으로 이해되기 때문.
 
 ---
@@ -652,6 +761,6 @@ kafka_study/
 └── frontend/                       # Vue 3 + Vite
 ```
 
-`common` 모듈에 `OrderCreatedEvent`를 두어 세 서비스가 같은 스키마를 공유한다.
+`common` 모듈에 `OrderCreatedEvent` / `OrderCanceledEvent`를 두어 세 서비스가 같은 스키마를 공유한다.
 
 > 실무에서는 서비스별로 스키마를 복제하거나 Schema Registry로 관리하는 게 일반적이다. 학습 프로젝트에서는 공유 모듈이 단순하고, 6단계 이후 "스키마가 바뀌면 어떻게 되는가"를 다룰 때 오히려 좋은 논의 지점이 된다.
