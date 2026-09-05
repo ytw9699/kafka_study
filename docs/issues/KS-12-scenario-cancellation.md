@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **타입** | DOCS |
-| **상태** | IN REVIEW |
+| **상태** | DONE |
 | **단계** | - (프로젝트 준비) |
 | **브랜치** | `docs/KS-12-scenario-cancellation` |
 | **PR** | [#6](https://github.com/ytw9699/kafka_study/pull/6) |
@@ -135,7 +135,7 @@ POST /api/orders/seed
 - [x] Kafka가 **필요한 조건과 불필요한 조건**의 경계가 명시되어 있다
 - [x] 3단계에 "DB 화면과 통계 화면의 숫자를 비교한다"는 검증 절차가 있다
 - [x] 멱등 키 정정(`orderId` → `eventId`)이 모든 문서에 반영됐다
-- [ ] PR 머지
+- [x] PR 머지
 
 ## 배운 것
 
