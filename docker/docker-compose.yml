@@ -1,7 +1,9 @@
-# KS-2 — 로컬 Kafka 인프라 (KRaft 모드)
+# 로컬 인프라 — Kafka(KRaft) + Kafka UI + PostgreSQL
 #
-# Postgres 는 여기 없다. KS-5(1단계)에서 추가한다.
-# 0단계는 Kafka 만 띄워 개념을 잡는 것이 목적이고,
+# KS-2(0단계): Kafka + Kafka UI
+# KS-5(1단계): PostgreSQL 추가
+#
+# 0단계에 Postgres 를 넣지 않은 것은 의도적이다.
 # 컨테이너를 한꺼번에 늘리면 "Kafka 가 안 뜬 건지 DB 가 안 뜬 건지" 디버깅 표면이 넓어진다.
 
 name: kafka-study
@@ -93,6 +95,30 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
       DYNAMIC_CONFIG_ENABLED: "true"
 
+  # ── KS-5 (1단계) ────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: kafkastudy
+      POSTGRES_PASSWORD: kafkastudy
+      # 기본 DB. 실제 서비스 DB(balancedb/frauddb)는 init 스크립트가 만든다.
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # 이 디렉토리의 .sql 은 **볼륨이 비어 있을 때 최초 1회만** 실행된다.
+      # 스크립트를 고쳤는데 반영이 안 되면 `docker compose down -v` 로 볼륨을 지워야 한다.
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kafkastudy -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
 volumes:
   kafka-data:
     name: kafka-study-data
+  postgres-data:
+    name: kafka-study-postgres
