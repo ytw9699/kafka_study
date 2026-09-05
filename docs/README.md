@@ -44,10 +44,13 @@
 | [KS-3](issues/KS-3-kafka-cli-basics.md) | Kafka CLI 실습 — 그룹·파티션·재생 확인 | EXPERIMENT | 0단계 | DONE |
 | [KS-4](issues/KS-4-gradle-multimodule.md) | Gradle 멀티모듈 뼈대 + 공통 이벤트 모델 | CHORE | 1단계 | DONE |
 | [KS-5](issues/KS-5-postgres-setup.md) | PostgreSQL 추가 및 DB 분리 | FEAT | 1단계 | DONE |
-| [KS-14](issues/KS-14-ledger-api-publish.md) | ledger-api — 거래 발행 및 SSE 게이트웨이 | FEAT | 2단계 | TODO |
-| [KS-15](issues/KS-15-frontend-ledger-feed.md) | 프론트 뼈대 + 거래 폼 + 실시간 원장 피드 | FEAT | 2단계 | TODO |
+| [KS-14](issues/KS-14-ledger-api-publish.md) | ledger-api — 거래 발행 및 SSE 게이트웨이 | FEAT | 2단계 | DONE |
+| [KS-15](issues/KS-15-frontend-ledger-feed.md) | 프론트 뼈대 + 거래 폼 + 실시간 원장 피드 | FEAT | 2단계 | DONE |
+| [KS-16](issues/KS-16-balance-worker.md) | balance-worker — 잔액 계산 컨슈머 | FEAT | 3단계 | TODO |
+| [KS-17](issues/KS-17-balance-panel.md) | 잔액 화면 + 기대 잔액 대조 | FEAT | 3단계 | TODO |
+| [KS-18](issues/KS-18-worker-restart-offset.md) | 워커 재기동 — offset 이어읽기 확인 | EXPERIMENT | 3단계 | TODO |
 
-3~7단계 작업은 [로드맵](planning/04-roadmap.md)에 분해되어 있으며, 2단계 완료 후 티켓으로 발급한다.
+4~7단계 작업은 [로드맵](planning/04-roadmap.md)에 분해되어 있으며, 착수 시점에 티켓으로 발급한다.
 
 ### 취소됨
 
