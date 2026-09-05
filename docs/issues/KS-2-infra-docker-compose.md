@@ -3,10 +3,10 @@
 | | |
 |---|---|
 | **타입** | FEAT |
-| **상태** | TODO |
+| **상태** | IN REVIEW |
 | **단계** | 0단계 — 인프라 |
 | **브랜치** | `feature/KS-2-infra-docker-compose` |
-| **PR** | - |
+| **PR** | [#10](https://github.com/ytw9699/kafka_study/pull/10) |
 
 ## 배경
 
@@ -20,12 +20,12 @@ Spring 위에서 시작하면 `@KafkaListener`가 알아서 해주는 것들 때
 
 ## 작업 내용
 
-- [ ] `docker/docker-compose.yml` 작성 — Kafka(KRaft 모드) + Kafka UI
-- [ ] 리스너 분리 설정 (`INTERNAL` / `EXTERNAL` / `CONTROLLER`)
-- [ ] Kafka 로그용 named volume 설정
-- [ ] 컨테이너 기동 및 Kafka UI 접속 확인 (`:8080`)
-- [ ] 호스트 CLI와 kafka-ui **양쪽 다** 브로커에 접속되는지 확인
-- [ ] `docs/planning/02-architecture.md`의 포트 표와 실제 구성 일치 확인
+- [x] `docker/docker-compose.yml` 작성 — Kafka(KRaft 모드) + Kafka UI
+- [x] 리스너 분리 설정 (`INTERNAL` / `EXTERNAL` / `CONTROLLER`)
+- [x] Kafka 로그용 named volume 설정
+- [x] 컨테이너 기동 및 Kafka UI 접속 확인 (`:8080`)
+- [x] 호스트 CLI와 kafka-ui **양쪽 다** 브로커에 접속되는지 확인
+- [x] `docs/planning/02-architecture.md`의 포트 표와 실제 구성 일치 확인
 
 > CLI 실습(토픽 생성, produce/consume, 컨슈머 그룹, 재소비)은 [KS-3](KS-3-kafka-cli-basics.md)에서 다룬다.
 > 이 티켓은 **인프라가 뜨는 것**까지가 범위다.
@@ -42,7 +42,7 @@ Spring 위에서 시작하면 `@KafkaListener`가 알아서 해주는 것들 때
 | 컨테이너 | 포트 | 역할 |
 |---|---|---|
 | `kafka` | 9092 | 브로커 (KRaft, 단일 노드) |
-| `kafka-ui` | 8080 | 토픽/메시지/컨슈머 그룹 조회 |
+| `kafka-ui` | **8090** | 토픽/메시지/컨슈머 그룹 조회 (컨테이너 내부 8080) |
 
 **Postgres는 이 단계에서 띄우지 않는다.** [KS-5](KS-5-postgres-setup.md)에서 추가한다.
 컨테이너를 한꺼번에 늘리면 "Kafka가 안 뜬 건지 DB가 안 뜬 건지" 디버깅 표면이 넓어진다.
@@ -64,16 +64,54 @@ Kafka 로그를 named volume에 둔다. **`docker compose down` 후에도 토픽
 
 ## 완료 조건 (DoD)
 
-- [ ] `docker compose up -d` 한 번으로 Kafka + Kafka UI가 뜬다
-- [ ] 브라우저에서 `localhost:8080` 접속 시 브로커가 보인다
-- [ ] 호스트에서 CLI로 브로커에 접속된다 (`kafka-topics --list`)
-- [ ] `docker compose down` → `up` 후에도 토픽이 유지된다
+- [x] `docker compose up -d` 한 번으로 Kafka + Kafka UI가 뜬다
+- [x] 브라우저에서 `localhost:8090` 접속 시 브로커가 보인다 (`/api/clusters` → `status: online`)
+- [x] 호스트에서 CLI로 브로커에 접속된다
+- [x] `docker compose down` → `up` 후에도 토픽이 유지된다 ✅
 
 > Kafka가 큐와 다르다는 것의 확인은 [KS-3](KS-3-kafka-cli-basics.md)에서 한다.
 
 ## 배운 것
 
-_(작업 후 작성)_
+### `advertised.listeners`에 CONTROLLER를 빠뜨리면 브로커가 아예 안 뜬다
+
+커스텀 리스너를 쓰면서 `advertised.listeners`에 브로커용(INTERNAL/EXTERNAL)만 적었더니
+`advertised.listeners cannot use the nonroutable meta-address 0.0.0.0` 로 기동 실패했다.
+
+Kafka는 **`listeners`에는 있는데 `advertised.listeners`에 없는 리스너에 대해 `listeners` 값을 그대로 가져다 쓴다.**
+그래서 `CONTROLLER://0.0.0.0:9093`이 되어 검증에 걸렸다.
+
+→ [TS-1](../troubleshooting/TS-1-advertised-listeners.md)
+
+### `listeners`와 `advertised.listeners`는 목적이 다르다
+
+| | 의미 |
+|---|---|
+| `listeners` | **어디에 바인딩할 것인가** — `0.0.0.0`으로 모든 인터페이스에서 받음 |
+| `advertised.listeners` | **클라이언트에게 뭐라고 알려줄 것인가** — 실제 도달 가능한 주소여야 함 |
+
+클라이언트는 부트스트랩 서버에 붙어 **광고된 주소를 받아 다시 접속**한다.
+그래서 광고 주소가 틀리면 "연결은 되는데 produce/consume에서 실패"하는 애매한 증상이 난다.
+
+이번 건은 문법 검증에서 걸려 **기동 자체가 막힌 것**이라 오히려 원인을 빨리 찾을 수 있었다.
+
+### 컨테이너 안의 `localhost`는 컨테이너 자신이다
+
+`kafka-ui`가 `localhost:9092`로 붙으면 kafka-ui 컨테이너 자신에게 접속하려 한다.
+그래서 컨테이너 간에는 `kafka:29092`(INTERNAL), 호스트에서는 `localhost:9092`(EXTERNAL)로 분리해야 한다.
+
+**이것이 리스너를 두 개로 나누는 유일한 이유다.** 보안이나 성능 때문이 아니다.
+
+### 볼륨 확인은 형식적인 절차가 아니었다
+
+`docker compose down` → `up` 후 `ledger-events` 토픽이 그대로 남아 있는 것을 확인했다.
+이것이 깨지면 5단계(원장 재구축)와 6단계(뒤늦게 합류한 컨슈머)가 **아예 성립하지 않는다.**
+`down -v`는 전체 초기화이므로 학습 중에는 조심해서 쓴다.
+
+### 호스트 포트 충돌은 흔하다
+
+8080은 다른 앱이 쓰고 있어 Kafka UI를 **8090**으로 노출했다 (컨테이너 내부는 8080 그대로).
+`ports: "8090:8080"` 처럼 호스트 포트만 바꾸면 컨테이너 설정은 건드릴 필요가 없다.
 
 ## 참고
 

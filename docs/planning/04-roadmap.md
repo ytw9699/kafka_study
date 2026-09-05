@@ -42,7 +42,7 @@ Postgres는 아직 띄우지 않는다. Kafka만으로 개념을 먼저 잡는�
 
 | # | 작업 | 확인 방법 |
 |---|---|---|
-| 0-1 | `docker/docker-compose.yml` — Kafka(KRaft) + Kafka UI | `docker compose up -d` 후 `localhost:8080` |
+| 0-1 | `docker/docker-compose.yml` — Kafka(KRaft) + Kafka UI | `docker compose up -d` 후 `localhost:8090` |
 | 0-2 | 리스너 분리 (`INTERNAL` / `EXTERNAL` / `CONTROLLER`) | 호스트 CLI와 kafka-ui **양쪽 다** 접속 |
 | 0-3 | Kafka 로그용 named volume | `down` → `up` 후 토픽 유지 |
 | 0-4 | `ledger-events` 토픽 생성 (파티션 3) | Kafka UI에서 파티션 3개 확인 |

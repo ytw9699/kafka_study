@@ -32,7 +32,7 @@ flowchart TB
 
     subgraph INF["인프라 — Docker Compose"]
         K["Apache Kafka (KRaft) :9092<br/>topic: ledger-events<br/>partitions 3 · key userId"]
-        KUI["Kafka UI :8080"]
+        KUI["Kafka UI :8090"]
         PG[("PostgreSQL :5432<br/>balancedb · frauddb")]
         KUI -.조회.-> K
     end
@@ -322,7 +322,7 @@ flowchart TB
         BROWSER["브라우저 :5173"]
         subgraph NET["Docker network"]
             KAFKA["kafka<br/>내부 :29092 / 외부 :9092"]
-            UI["kafka-ui :8080"]
+            UI["kafka-ui :8090"]
             PG[("postgres :5432")]
         end
     end
@@ -330,7 +330,7 @@ flowchart TB
     SPRING -->|"localhost:5432"| PG
     UI -->|"kafka:29092"| KAFKA
     BROWSER --> SPRING
-    BROWSER -->|":8080"| UI
+    BROWSER -->|":8090"| UI
 ```
 
 **Postgres는 0단계가 아니라 1단계에서 추가한다.** 컨테이너를 한꺼번에 늘리면 "Kafka가 안 뜬 건지 DB가 안 뜬 건지" 디버깅 표면이 넓어진다.
@@ -636,7 +636,7 @@ DO UPDATE SET balance        = user_balance.balance + :delta,
 | 대상 | 포트 |
 |---|---|
 | Kafka (브로커) | 9092 |
-| Kafka UI | 8080 |
+| Kafka UI | **8090** (컨테이너 내부는 8080) |
 | PostgreSQL | 5432 |
 | ledger-api | 8081 |
 | balance-worker | 8082 (추가 인스턴스 8092, 8093) |
