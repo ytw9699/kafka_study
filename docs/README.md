@@ -24,7 +24,7 @@
 
 | 티켓 | 제목 | 타입 | 단계 | 상태 |
 |---|---|---|---|---|
-| [KS-1](issues/KS-1-project-setup-docs.md) | 프로젝트 기획 및 운영 체계 수립 | DOCS | - | IN REVIEW |
+| [KS-1](issues/KS-1-project-setup-docs.md) | 프로젝트 기획 및 운영 체계 수립 | DOCS | - | DONE |
 | [KS-2](issues/KS-2-infra-docker-compose.md) | 로컬 Kafka 인프라 구성 | FEAT | 0단계 | TODO |
 | KS-3 | order-service — 주문 생성 및 이벤트 발행 | FEAT | 1단계 | 예정 |
 | KS-4 | feed-service + 프론트 — 실시간 주문 피드 | FEAT | 2단계 | 예정 |
