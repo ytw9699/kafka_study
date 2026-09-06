@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **타입** | EXPERIMENT |
-| **상태** | IN REVIEW |
+| **상태** | DONE |
 | **단계** | 3단계 |
 | **브랜치** | `experiment/KS-18-worker-restart-offset` |
 | **PR** | [#22](https://github.com/ytw9699/kafka_study/pull/22) |
