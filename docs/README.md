@@ -74,5 +74,6 @@
 |---|---|
 | [TS-1](troubleshooting/TS-1-advertised-listeners.md) | KRaft 브로커가 `advertised.listeners ... 0.0.0.0` 로 기동 실패 |
 | [TS-2](troubleshooting/TS-2-poison-pill.md) | 역직렬화 불가 메시지 하나가 컨슈머 전체를 멈춘다 (poison pill) |
+| [TS-3](troubleshooting/TS-3-seek-callback.md) | 런타임 seek 이 컨슈머를 깨뜨린다 — 콜백 두 종류 구분 |
 
 > Kafka는 설정 하나 때문에 안 되는 경우가 많다. 한참 붙잡은 문제는 반드시 `troubleshooting/`에 남긴다.

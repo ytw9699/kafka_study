@@ -85,4 +85,16 @@ class BalanceService(
 
     @Transactional(readOnly = true)
     fun all(): List<UserBalance> = repository.findAll().sortedBy { it.userId }
+
+    /**
+     * 잔액 전체를 비운다. `rebuild` 에서만 쓴다.
+     *
+     * **로그가 원본이므로 이것을 지워도 복원할 수 있다.**
+     * 이 한 줄이 `rebuild`(정확히 복원)와 `replay`(두 배가 됨)를 가른다.
+     */
+    @Transactional
+    fun clearAll() {
+        repository.deleteAll()
+        log.warn("잔액 테이블을 비웠습니다. 로그로부터 재구축됩니다.")
+    }
 }
