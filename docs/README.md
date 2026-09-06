@@ -37,6 +37,7 @@
 | [KS-12](issues/KS-12-scenario-cancellation.md) | 시나리오 보강 — 주문 취소와 일자별 매출 | DOCS | DONE |
 | [KS-13](issues/KS-13-pivot-ledger.md) | **도메인 전환 — 포인트 지갑 원장** | DOCS | DONE |
 | [KS-24](issues/KS-24-progress-record.md) | 진행 기록 신설 및 문서-구현 불일치 정정 | DOCS | DONE |
+| [KS-25](issues/KS-25-tool-comparison-fix.md) | 도구 비교표 정정 — "Kafka뿐"은 과장이었다 | DOCS | IN REVIEW |
 
 ### 단계별 (0~5단계 · 1차 완결)
 

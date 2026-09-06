@@ -63,9 +63,12 @@ Kafka의 기초를 **단계적으로, 눈으로 확인하며** 익히기 위한 
 | RabbitMQ | ❌ | ❌ | ✅ |
 | Redis Streams | ❌ 파티션 개념 없음 | ✅ | ✅ |
 | SQS FIFO | ✅ | ❌ | ❌ |
+| **AWS Kinesis** | ✅ | ✅ | ✅ |
 | **Kafka** | ✅ | ✅ | ✅ |
 
-**셋을 한 번에 제공하는 것은 Kafka뿐이다.**
+**큐 계열은 각각 반쪽이고, 셋을 다 하는 것은 Kafka와 Kinesis다.**
+Kafka를 고르는 이유는 기능이 아니라 **생태계(Connect·Debezium)와 벤더 중립성**이다.
+→ [기획서 6절](docs/planning/01-planning.md)
 
 ## 문서
 
