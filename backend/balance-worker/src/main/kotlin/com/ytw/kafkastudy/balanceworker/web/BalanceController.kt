@@ -33,6 +33,8 @@ class BalanceController(
             balances = rows,
             totalApplied = rows.sumOf { it.appliedEvents },
             totalRejected = rows.sumOf { it.rejectedEvents },
+            idempotent = balanceService.isIdempotent(),
+            processedEvents = balanceService.processedCount(),
         )
     }
 
@@ -90,6 +92,10 @@ data class BalancesResponse(
     val balances: List<BalanceRow>,
     val totalApplied: Int,
     val totalRejected: Int,
+    /** 멱등 처리 활성화 여부. `app.idempotent` */
+    val idempotent: Boolean,
+    /** `processed_event` 에 기록된 건수 */
+    val processedEvents: Long,
 )
 
 data class BalanceRow(

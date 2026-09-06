@@ -79,6 +79,11 @@ class LedgerConsumer(
                 "거절 p{}#{} {} 잔액={} 요청={}",
                 partition, offset, event.userId, result.balance, result.requested,
             )
+
+            is ApplyResult.Skipped -> log.info(
+                "건너뜀 p{}#{} {} eventId={} (이미 처리함)",
+                partition, offset, event.userId, result.eventId,
+            )
         }
     }
 }

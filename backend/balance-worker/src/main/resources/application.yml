@@ -30,6 +30,13 @@ spring:
         spring.json.use.type.headers: false
 
 app:
+  # 멱등 처리 (5단계).
+  #
+  # 기본값 false — KS-23 에서 재생 시 잔액이 두 배가 되는 문제를 먼저 겪기 위함이다.
+  # 이 프로젝트는 일관되게 "문제를 먼저 겪고 해결한다"는 순서를 따른다.
+  idempotent: ${APP_IDEMPOTENT:false}
+  replay:
+    delay-ms: ${APP_REPLAY_DELAY_MS:0}
   topic:
     ledger-events: ledger-events
   consumer-group:
