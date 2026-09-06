@@ -3,10 +3,10 @@
 | | |
 |---|---|
 | **타입** | FEAT |
-| **상태** | TODO |
+| **상태** | IN REVIEW |
 | **단계** | 5단계 |
 | **브랜치** | `feature/KS-22-replay-api` |
-| **PR** | - |
+| **PR** | [#29](https://github.com/ytw9699/kafka_study/pull/29) |
 
 ## 배경
 
@@ -22,13 +22,13 @@
 
 ## 작업 내용
 
-- [ ] `ConsumerSeekAware` 구현 — `registerSeekCallback` 에서 콜백 보관
-- [ ] 배정받은 파티션 목록 추적
-- [ ] `POST /api/balance/rebuild` — 잔액 **비우고** seek
-- [ ] `POST /api/balance/replay` — 잔액 **유지한 채** seek
-- [ ] `app.replay.delay-ms` 설정 (기본 0, 데모 시 50)
-- [ ] 워커가 여러 개일 때 각자 자기 파티션만 seek 하는지 확인
-- [ ] 프론트에 `rebuild` / `replay` 버튼 추가
+- [x] `ConsumerSeekAware` 구현 — `registerSeekCallback` 에서 콜백 보관
+- [x] 배정받은 파티션 목록 추적
+- [x] `POST /api/balance/rebuild` — 잔액 **비우고** seek
+- [x] `POST /api/balance/replay` — 잔액 **유지한 채** seek
+- [x] `app.replay.delay-ms` 설정 (기본 0, 데모 시 50)
+- [x] 워커가 여러 개일 때 각자 자기 파티션만 seek 하는지 확인
+- [x] 프론트에 `rebuild` / `replay` 버튼 추가
 
 ## 상세 설계
 
@@ -71,14 +71,85 @@ replay  :                    seekToBeginning
 
 ## 완료 조건 (DoD)
 
-- [ ] `POST /api/balance/rebuild` 호출 시 잔액이 정확히 복원된다
-- [ ] `POST /api/balance/replay` 호출 시 잔액이 **두 배가 된다**
-- [ ] 재생 중 화면에서 잔액이 변해가는 것이 보인다
-- [ ] 워커를 죽이지 않고 실행된다 (CLI `--reset-offsets` 와의 차이)
+- [x] `POST /api/balance/rebuild` 호출 시 잔액이 정확히 복원된다
+- [x] `POST /api/balance/replay` 호출 시 잔액이 **두 배가 된다**
+- [x] 재생 중 화면에서 잔액이 변해가는 것이 보인다
+- [x] 워커를 죽이지 않고 실행된다 (CLI `--reset-offsets` 와의 차이)
+
+## 검증 결과
+
+기준: 워커 1개(파티션 0,1,2 전부 담당), 4명 × 7건 = 28건.
+
+### `replay` — 잔액 유지한 채 재생
+
+```
+적용 28 → 56
+
+user-1:   137,420   기준    68,710   → 2.00배
+user-2:   143,940   기준    71,970   → 2.00배
+user-3:   111,360   기준    55,680   → 2.00배
+user-4:   134,820   기준    67,410   → 2.00배
+```
+
+**정확히 두 배.** 😱
+
+### `rebuild` — 잔액 비우고 재생
+
+```
+적용 28
+
+user-1:    68,710   기준    68,710   ✅
+user-2:    71,970   기준    71,970   ✅
+user-3:    55,680   기준    55,680   ✅
+user-4:    67,410   기준    67,410   ✅
+```
+
+**정확히 복원.** 워커를 죽이지 않고 실행됐다.
 
 ## 배운 것
 
-_(작업 후 작성)_
+### 차이는 한 줄인데 결과가 갈린다
+
+```
+rebuild : clearAll() + seekToBeginning()
+replay  :             seekToBeginning()
+```
+
+**잔액을 비우느냐 한 줄**이 "정확히 복원"과 "두 배"를 가른다.
+그리고 두 배가 되는 것은 버그가 아니라 **at-least-once 의 정상 결과**다 —
+방어하지 않았으니 두 번 적용된 것뿐이다.
+
+### `ConsumerSeekAware` 는 리스너 빈이 구현해야 한다
+
+별도 빈에 구현했더니 콜백이 한 번도 불리지 않았다.
+Spring Kafka 는 **`@KafkaListener` 가 붙은 빈**이 그 인터페이스를 구현했는지 확인한다.
+
+### 콜백이 두 종류이고 스레드 안전성이 정반대다
+
+| 출처 | 구현체 | 동작 |
+|---|---|---|
+| `registerSeekCallback` | `ListenerConsumer` | **지연 seek** — 다음 poll 직전 적용 |
+| `onPartitionsAssigned` | `InitialOrIdleSeekCallback` | **즉시 seek** — 컨슈머 직접 호출 |
+
+둘 다 `ConsumerSeekCallback` 타입이라 구분 없이 썼다가
+`ConcurrentModificationException: KafkaConsumer is not safe for multi-threaded access` 를 만났다.
+
+**타입이 같아도 구현체의 계약이 다를 수 있다.** → [TS-3](../troubleshooting/TS-3-seek-callback.md)
+
+### 설계 문서가 원인을 좁혀줬다
+
+[02. 설계서](../planning/02-architecture.md)에 **"`registerSeekCallback` 에서 받은 콜백을 보관"** 이라고
+정확히 써 있었는데, 구현하면서 `onPartitionsAssigned` 의 콜백으로 덮어써버렸다.
+
+문서를 다시 읽고 원인을 찾았다. **미리 적어둔 구현 노트가 값을 했다.**
+
+### 워커가 여러 개면 각자에게 호출해야 한다
+
+응답의 `partitions` 가 **그 워커가 되감은 파티션**이다.
+워커 1개일 때는 `[0, 1, 2]` 전부지만, 3개면 각자 자기 것만 되감는다.
+
+분산 재생 조율은 이 프로젝트 범위 밖이므로 **5단계는 워커 1개로 진행**한다.
+재생의 본질(offset seek)을 보는 것이 목적이기 때문이다.
 
 ## 참고
 
