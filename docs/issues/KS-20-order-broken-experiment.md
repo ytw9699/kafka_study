@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **타입** | EXPERIMENT |
-| **상태** | IN REVIEW |
+| **상태** | DONE |
 | **단계** | 4단계 |
 | **브랜치** | `experiment/KS-20-order-broken` |
 | **PR** | [#25](https://github.com/ytw9699/kafka_study/pull/25) |
