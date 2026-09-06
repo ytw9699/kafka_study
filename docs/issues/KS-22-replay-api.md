@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **타입** | FEAT |
-| **상태** | IN REVIEW |
+| **상태** | DONE |
 | **단계** | 5단계 |
 | **브랜치** | `feature/KS-22-replay-api` |
 | **PR** | [#29](https://github.com/ytw9699/kafka_study/pull/29) |

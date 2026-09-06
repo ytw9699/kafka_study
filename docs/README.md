@@ -52,8 +52,8 @@
 | [KS-19](issues/KS-19-worker-scale-out.md) | 워커 인스턴스 확장 + 파티션 배정 화면 | FEAT | 4단계 | DONE |
 | [KS-20](issues/KS-20-order-broken-experiment.md) | ★ 순서가 깨지면 잔액이 틀어진다 (실험 A) | EXPERIMENT | 4단계 | DONE |
 | [KS-21](issues/KS-21-rebalance-experiment.md) | 리밸런싱 관찰 (실험 B) | EXPERIMENT | 4단계 | DONE |
-| [KS-22](issues/KS-22-replay-api.md) | 재생 API — rebuild / replay | FEAT | 5단계 | TODO |
-| [KS-23](issues/KS-23-idempotency-experiment.md) | ★ 재생하면 두 배가 된다 → 멱등성 | EXPERIMENT | 5단계 | TODO |
+| [KS-22](issues/KS-22-replay-api.md) | 재생 API — rebuild / replay | FEAT | 5단계 | DONE |
+| [KS-23](issues/KS-23-idempotency-experiment.md) | ★ 재생하면 두 배가 된다 → 멱등성 | EXPERIMENT | 5단계 | DONE |
 
 4~7단계 작업은 [로드맵](planning/04-roadmap.md)에 분해되어 있으며, 착수 시점에 티켓으로 발급한다.
 
