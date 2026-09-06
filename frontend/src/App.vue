@@ -2,6 +2,7 @@
 import TxForm from './components/TxForm.vue'
 import LedgerFeed from './components/LedgerFeed.vue'
 import BalancePanel from './components/BalancePanel.vue'
+import PartitionBoard from './components/PartitionBoard.vue'
 </script>
 
 <template>
@@ -18,11 +19,7 @@ import BalancePanel from './components/BalancePanel.vue'
       <TxForm />
       <LedgerFeed />
       <BalancePanel />
-      <!-- ④ PartitionBoard — 4단계에서 추가 -->
-      <section class="panel placeholder">
-        <h2>④ 워커 · 파티션 배정</h2>
-        <p>4단계 — 리밸런싱이 여기서 실시간으로 보입니다.</p>
-      </section>
+      <PartitionBoard />
     </main>
   </div>
 </template>
