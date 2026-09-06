@@ -19,6 +19,7 @@
 | [03. 기술 스택 결정서](planning/03-tech-stack.md) | 스택 선택 근거와 탈락시킨 대안 |
 | [04. 작업 로드맵](planning/04-roadmap.md) | 0~7단계 세부 작업 분해와 확인 방법 |
 | [05. DB로 직접 만들면](planning/05-why-not-diy.md) | DIY 대응표, split-brain, fencing token |
+| **[06. 진행 기록](planning/06-progress.md)** | **1차 완결 회고 — 복기용. 여기부터 읽어도 된다** |
 
 ---
 

@@ -36,7 +36,9 @@ flowchart TB
 
 ---
 
-## 0단계 — Kafka 인프라
+## 0단계 — Kafka 인프라 ✅
+
+> 완료: [KS-2](../issues/KS-2-infra-docker-compose.md) · [KS-3](../issues/KS-3-kafka-cli-basics.md) — 태그 `step-0`
 
 Postgres는 아직 띄우지 않는다. Kafka만으로 개념을 먼저 잡는다.
 
@@ -60,7 +62,9 @@ Postgres는 아직 띄우지 않는다. Kafka만으로 개념을 먼저 잡는�
 
 ---
 
-## 1단계 — 뼈대 + PostgreSQL
+## 1단계 — 뼈대 + PostgreSQL ✅
+
+> 완료: [KS-4](../issues/KS-4-gradle-multimodule.md) · [KS-5](../issues/KS-5-postgres-setup.md) — 태그 `step-1`
 
 | # | 작업 | 확인 방법 |
 |---|---|---|
@@ -77,7 +81,9 @@ Postgres는 아직 띄우지 않는다. Kafka만으로 개념을 먼저 잡는�
 
 ---
 
-## 2단계 — ledger-api 발행 + 실시간 피드
+## 2단계 — ledger-api 발행 + 실시간 피드 ✅
+
+> 완료: [KS-14](../issues/KS-14-ledger-api-publish.md) · [KS-15](../issues/KS-15-frontend-ledger-feed.md) — 태그 `step-2`
 
 | # | 작업 | 확인 방법 |
 |---|---|---|
@@ -99,14 +105,16 @@ Postgres는 아직 띄우지 않는다. Kafka만으로 개념을 먼저 잡는�
 
 ---
 
-## 3단계 — balance-worker 1개
+## 3단계 — balance-worker 1개 ✅
+
+> 완료: [KS-16](../issues/KS-16-balance-worker.md) · [KS-17](../issues/KS-17-balance-panel.md) · [KS-18](../issues/KS-18-worker-restart-offset.md) — 태그 `step-3`
 
 아직 인스턴스는 하나다. **여기까지는 순서 문제가 발생하지 않는다.**
 
 | # | 작업 | 확인 방법 |
 |---|---|---|
 | 3-1 | `@KafkaListener` (`balance-group`, `earliest`) | 로그에 이벤트 |
-| 3-2 | `UserBalance` 엔티티 + upsert (`ON CONFLICT`) | 단위 테스트 |
+| 3-2 | `UserBalance` 엔티티 + 갱신 | 단위 테스트 |
 | 3-3 | 이벤트 타입 분기 — 적립 `+`, 사용 `−` | 단위 테스트 |
 | 3-4 | 잔액 부족 시 **거절** 처리 + 기록 | 잔액보다 큰 사용 → 거절 |
 | 3-5 | `GET /api/balance` | 잔액 조회 |
@@ -120,9 +128,22 @@ Postgres는 아직 띄우지 않는다. Kafka만으로 개념을 먼저 잡는�
 
 > 3-4가 순서 의존성을 만든다. 거절 판정이 그 시점 잔액에 좌우되므로 순서가 바뀌면 결과가 달라진다.
 
+> **📌 실제 구현에서 바뀐 것 — 원자적 upsert 를 쓰지 않았다**
+>
+> 원래 `INSERT ... ON CONFLICT ... DO UPDATE` 를 쓰려 했으나 **필요가 없었다.**
+> 파티션 키가 `userId` 이고 한 파티션은 한 워커만 처리하므로,
+> 같은 사용자의 거래는 언제나 한 워커가 순서대로 다룬다 — **경합 자체가 발생하지 않는다.**
+> JPA `findById` + `save` 로 충분하다.
+>
+> **파티션 키가 순서 보장뿐 아니라 동시성 안전도 준다**는 발견이며,
+> 4단계에서 키를 흩뜨리면 이 전제가 무너져 lost update 가 생긴다.
+> → [KS-16](../issues/KS-16-balance-worker.md)
+
 ---
 
-## 4단계 ★ — 순서 · 병렬 · 리밸런싱
+## 4단계 ★ — 순서 · 병렬 · 리밸런싱 ✅
+
+> 완료: [KS-19](../issues/KS-19-worker-scale-out.md) · [KS-20](../issues/KS-20-order-broken-experiment.md) · [KS-21](../issues/KS-21-rebalance-experiment.md) — 태그 `step-4`
 
 **이 프로젝트의 목적지.**
 
@@ -157,7 +178,9 @@ Postgres는 아직 띄우지 않는다. Kafka만으로 개념을 먼저 잡는�
 
 ---
 
-## 5단계 ★ — 원장 재구축 & 멱등성
+## 5단계 ★ — 원장 재구축 & 멱등성 ✅
+
+> 완료: [KS-22](../issues/KS-22-replay-api.md) · [KS-23](../issues/KS-23-idempotency-experiment.md) — 태그 `step-5` · **1차 완결**
 
 | # | 작업 | 확인 방법 |
 |---|---|---|
@@ -165,6 +188,7 @@ Postgres는 아직 띄우지 않는다. Kafka만으로 개념을 먼저 잡는�
 | 5-2 | `POST /api/balance/replay` — 잔액 **유지한 채** seek | **포인트가 두 배** 😱 |
 | 5-3 | 두 배가 되는 과정을 화면에서 관찰 (`app.replay.delay-ms`) | 잔액이 실시간으로 증가 |
 | 5-4 | `POST /api/balance/rebuild` — 잔액 **비우고** seek | 정확히 복원 ✅ |
+| 5-4b | `clearAll()` 이 **처리 기록도** 비우게 한다 | 안 그러면 rebuild 가 전부 skip |
 | 5-5 | 잔액 계산 로직에 버그를 넣었다 고치고 `rebuild` | 원장이 올바르게 재구축 |
 | 5-6 | `processed_event` 테이블 추가 (**`event_id` PK**) | - |
 | 5-7 | 멱등 처리 — 이미 처리한 `eventId`는 skip | `replay` 해도 **잔액 불변** ✅ |
@@ -174,6 +198,12 @@ Postgres는 아직 띄우지 않는다. Kafka만으로 개념을 먼저 잡는�
 > 5-6을 **4단계에서 미리 만들지 않는다.** 5-2의 😱를 먼저 겪어야 필요성이 몸에 남는다.
 
 > 5-8은 "왜 CLI가 아니라 API로 만들었는가"의 근거를 직접 확인하는 작업이다.
+
+> **📌 실제 진행에서 추가된 제약 — 워커 1개로 실험한다**
+>
+> `rebuild` 를 호출하면 **그 워커가 담당한 파티션만** 되감긴다.
+> 워커가 여러 개면 각자에게 호출해야 한다. 분산 재생 조율은 이 프로젝트 범위 밖이므로,
+> 5단계는 **워커 1개**로 진행했다. 재생의 본질(offset seek)을 보는 것이 목적이다.
 
 **여기서 `dev` → `main` 머지 + `step-5` 태그. 1차 완결.**
 
