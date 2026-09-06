@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **타입** | FEAT |
-| **상태** | IN REVIEW |
+| **상태** | DONE |
 | **단계** | 3단계 |
 | **브랜치** | `feature/KS-16-balance-worker` |
 | **PR** | [#20](https://github.com/ytw9699/kafka_study/pull/20) |
