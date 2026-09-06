@@ -1,8 +1,43 @@
 spring:
   application:
     name: balance-worker
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/balancedb}
+    username: ${DB_USER:kafkastudy}
+    password: ${DB_PASSWORD:kafkastudy}
+  jpa:
+    hibernate:
+      # 학습용. 운영이라면 Flyway/Liquibase 로 관리한다.
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      # 최초 기동 시 이미 쌓여 있는 이벤트를 전부 읽어 잔액을 만들어낸다.
+      #
+      # ⚠️ 이 설정은 '커밋된 offset 이 없을 때만' 동작한다.
+      #    재기동하면 커밋된 지점에서 이어 읽는다 (KS-18 에서 확인).
+      #    전체 재생은 5단계의 명시적 API 로만 한다.
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.value.default.type: com.ytw.kafkastudy.common.LedgerEvent
+        spring.json.trusted.packages: com.ytw.kafkastudy.common
+        spring.json.use.type.headers: false
+
+app:
+  topic:
+    ledger-events: ledger-events
+  consumer-group:
+    balance: balance-group
 
 server:
   port: ${SERVER_PORT:8082}
+
+logging:
+  level:
+    com.ytw.kafkastudy: INFO

@@ -46,9 +46,12 @@
 | [KS-5](issues/KS-5-postgres-setup.md) | PostgreSQL 추가 및 DB 분리 | FEAT | 1단계 | DONE |
 | [KS-14](issues/KS-14-ledger-api-publish.md) | ledger-api — 거래 발행 및 SSE 게이트웨이 | FEAT | 2단계 | DONE |
 | [KS-15](issues/KS-15-frontend-ledger-feed.md) | 프론트 뼈대 + 거래 폼 + 실시간 원장 피드 | FEAT | 2단계 | DONE |
-| [KS-16](issues/KS-16-balance-worker.md) | balance-worker — 잔액 계산 컨슈머 | FEAT | 3단계 | TODO |
-| [KS-17](issues/KS-17-balance-panel.md) | 잔액 화면 + 기대 잔액 대조 | FEAT | 3단계 | TODO |
-| [KS-18](issues/KS-18-worker-restart-offset.md) | 워커 재기동 — offset 이어읽기 확인 | EXPERIMENT | 3단계 | TODO |
+| [KS-16](issues/KS-16-balance-worker.md) | balance-worker — 잔액 계산 컨슈머 | FEAT | 3단계 | DONE |
+| [KS-17](issues/KS-17-balance-panel.md) | 잔액 화면 + 기대 잔액 대조 | FEAT | 3단계 | DONE |
+| [KS-18](issues/KS-18-worker-restart-offset.md) | 워커 재기동 — offset 이어읽기 확인 | EXPERIMENT | 3단계 | DONE |
+| [KS-19](issues/KS-19-worker-scale-out.md) | 워커 인스턴스 확장 + 파티션 배정 화면 | FEAT | 4단계 | TODO |
+| [KS-20](issues/KS-20-order-broken-experiment.md) | ★ 순서가 깨지면 잔액이 틀어진다 (실험 A) | EXPERIMENT | 4단계 | TODO |
+| [KS-21](issues/KS-21-rebalance-experiment.md) | 리밸런싱 관찰 (실험 B) | EXPERIMENT | 4단계 | TODO |
 
 4~7단계 작업은 [로드맵](planning/04-roadmap.md)에 분해되어 있으며, 착수 시점에 티켓으로 발급한다.
 
@@ -68,5 +71,6 @@
 | 문서 | 내용 |
 |---|---|
 | [TS-1](troubleshooting/TS-1-advertised-listeners.md) | KRaft 브로커가 `advertised.listeners ... 0.0.0.0` 로 기동 실패 |
+| [TS-2](troubleshooting/TS-2-poison-pill.md) | 역직렬화 불가 메시지 하나가 컨슈머 전체를 멈춘다 (poison pill) |
 
 > Kafka는 설정 하나 때문에 안 되는 경우가 많다. 한참 붙잡은 문제는 반드시 `troubleshooting/`에 남긴다.
