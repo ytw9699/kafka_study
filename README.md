@@ -120,7 +120,7 @@ Apache Kafka (KRaft) · Kafka UI · Docker Compose
 | | 1단계 | 뼈대 + PostgreSQL | KS-4, KS-5 ✅ |
 | | 2단계 | `ledger-api` 발행 + 실시간 피드 | KS-14, KS-15 ✅ |
 | | 3단계 | `balance-worker` 1개 — 잔액 계산 | KS-16 ~ KS-18 ✅ |
-| **1차** | **4단계 ★** | **순서 깨짐 목격 → 파티션 키 → 리밸런싱** | KS-19 ~ KS-21 |
+| **1차** | **4단계 ★** | **순서 깨짐 목격 → 파티션 키 → 리밸런싱** | KS-19 ~ KS-21 ✅ |
 | **1차** | **5단계 ★** | 원장 재구축 & 멱등성 | 미발급 |
 | 2차 | 6단계 | `fraud-service` 합류 | 미발급 |
 | 2차 | 7단계 | 실패 처리 — blocking retry, DLT | 미발급 |
