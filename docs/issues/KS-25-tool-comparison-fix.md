@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **타입** | DOCS |
-| **상태** | IN REVIEW |
+| **상태** | DONE |
 | **단계** | - (문서 정정) |
 | **브랜치** | `docs/KS-25-tool-comparison-fix` |
 | **PR** | [#34](https://github.com/ytw9699/kafka_study/pull/34) |
@@ -37,7 +37,7 @@ Kinesis 도 **샤드(= 파티션) 기반 로그**다.
 - [x] 표에 넣지 않은 도구(Pulsar 등)와 그 이유 명시
 - [x] `06-progress.md` — 정정 기록 추가
 - [x] `README.md` 표 갱신
-- [ ] PR 머지
+- [x] PR 머지
 
 ## 정정 내용
 
