@@ -79,6 +79,7 @@ Kafka의 기초를 **단계적으로, 눈으로 확인하며** 익히기 위한 
 | [03. 기술 스택 결정서](docs/planning/03-tech-stack.md) | 스택 선택 근거, 탈락한 대안들 |
 | [04. 작업 로드맵](docs/planning/04-roadmap.md) | 단계별 세부 작업 분해 |
 | [05. DB로 직접 만들면](docs/planning/05-why-not-diy.md) | DIY 대응표, split-brain, fencing |
+| **[06. 진행 기록](docs/planning/06-progress.md)** | **1차 완결 회고 — 무엇을 확인했고 무엇이 틀렸다 고쳐졌나** |
 
 작업 규칙: [문서 구조](docs/conventions/01-doc-structure.md) · [티켓 체계](docs/conventions/02-ticket.md) · [브랜치 전략](docs/conventions/03-branch-strategy.md)
 
@@ -141,6 +142,23 @@ Apache Kafka (KRaft) · Kafka UI · Docker Compose
 > | 6 | 실패해도 원장이 틀어지지 않음 | 7단계 (2차) |
 >
 > 남은 2차(6~7단계)는 실무 운영 지식이며 핵심 주장과는 별개다.
+
+## 복기하려면
+
+| 순서 | 문서 | 시간 |
+|---|---|---|
+| 1 | 이 README | 3분 |
+| 2 | [01. 기획서](docs/planning/01-planning.md) | 15분 — **가장 중요** |
+| 3 | [06. 진행 기록](docs/planning/06-progress.md) | 10분 — 전체 회고 |
+| 4 | [KS-20](docs/issues/KS-20-order-broken-experiment.md) | 5분 — 하이라이트 |
+
+**급하면 1 → 3 → 4.**
+각 티켓의 **"배운 것"** 섹션이 실제 자산이므로 코드보다 그쪽을 먼저 읽는 편이 낫다.
+
+```bash
+git log --oneline main     # 단계별 스냅샷 (step-0 ~ step-5)
+git show step-4            # 특정 시점 코드
+```
 
 ## 브랜치
 
