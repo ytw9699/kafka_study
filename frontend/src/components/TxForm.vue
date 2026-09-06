@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { burst, createTx, getKeyMode, setKeyMode } from '../api/ledger'
 import type { PartitionKeyMode, PublishResult } from '../api/types'
 
@@ -15,12 +15,29 @@ const error = ref<string | null>(null)
 const keyMode = ref<PartitionKeyMode>('USER_ID')
 const busy = ref(false)
 
-onMounted(async () => {
+// 파티션 키 모드를 주기적으로 확인한다.
+//
+// API 로 직접 바꿀 수도 있으므로(실험 스크립트 등) 화면이 stale 해지면 안 된다.
+// 이 값이 틀리면 "지금 정상 모드인가 실험 모드인가"를 오판하게 되어
+// 4단계 실험의 해석 자체가 어긋난다.
+let modeTimer: number | null = null
+
+async function syncKeyMode() {
   try {
     keyMode.value = await getKeyMode()
+    if (error.value?.includes('ledger-api')) error.value = null
   } catch {
     error.value = 'ledger-api(:8081)에 연결할 수 없습니다'
   }
+}
+
+onMounted(() => {
+  void syncKeyMode()
+  modeTimer = window.setInterval(syncKeyMode, 2000)
+})
+
+onUnmounted(() => {
+  if (modeTimer !== null) clearInterval(modeTimer)
 })
 
 async function submit(type: 'EARN' | 'SPEND') {
