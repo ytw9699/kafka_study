@@ -49,9 +49,9 @@
 | [KS-16](issues/KS-16-balance-worker.md) | balance-worker — 잔액 계산 컨슈머 | FEAT | 3단계 | DONE |
 | [KS-17](issues/KS-17-balance-panel.md) | 잔액 화면 + 기대 잔액 대조 | FEAT | 3단계 | DONE |
 | [KS-18](issues/KS-18-worker-restart-offset.md) | 워커 재기동 — offset 이어읽기 확인 | EXPERIMENT | 3단계 | DONE |
-| [KS-19](issues/KS-19-worker-scale-out.md) | 워커 인스턴스 확장 + 파티션 배정 화면 | FEAT | 4단계 | TODO |
-| [KS-20](issues/KS-20-order-broken-experiment.md) | ★ 순서가 깨지면 잔액이 틀어진다 (실험 A) | EXPERIMENT | 4단계 | TODO |
-| [KS-21](issues/KS-21-rebalance-experiment.md) | 리밸런싱 관찰 (실험 B) | EXPERIMENT | 4단계 | TODO |
+| [KS-19](issues/KS-19-worker-scale-out.md) | 워커 인스턴스 확장 + 파티션 배정 화면 | FEAT | 4단계 | DONE |
+| [KS-20](issues/KS-20-order-broken-experiment.md) | ★ 순서가 깨지면 잔액이 틀어진다 (실험 A) | EXPERIMENT | 4단계 | DONE |
+| [KS-21](issues/KS-21-rebalance-experiment.md) | 리밸런싱 관찰 (실험 B) | EXPERIMENT | 4단계 | DONE |
 
 4~7단계 작업은 [로드맵](planning/04-roadmap.md)에 분해되어 있으며, 착수 시점에 티켓으로 발급한다.
 
