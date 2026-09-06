@@ -17,11 +17,17 @@ interface UserBalanceRepository : JpaRepository<UserBalance, String>
 sealed interface ApplyResult {
     data class Applied(val userId: String, val before: Long, val after: Long) : ApplyResult
     data class Rejected(val userId: String, val balance: Long, val requested: Long) : ApplyResult
+
+    /** 이미 처리한 이벤트라 건너뛴 경우. **멱등 처리의 결과.** */
+    data class Skipped(val userId: String, val eventId: String) : ApplyResult
 }
 
 @Service
 class BalanceService(
     private val repository: UserBalanceRepository,
+    private val processedRepository: ProcessedEventRepository,
+    @org.springframework.beans.factory.annotation.Value("\${app.idempotent:false}")
+    private val idempotent: Boolean,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -49,6 +55,15 @@ class BalanceService(
      */
     @Transactional
     fun apply(event: LedgerEvent): ApplyResult {
+        // 멱등 검사 — 이미 처리한 이벤트면 건너뛴다.
+        //
+        // ⚠️ 이 검사와 잔액 갱신이 **같은 트랜잭션**이어야 한다.
+        //    분리되면 그 사이에 죽었을 때 다시 중복이 생긴다.
+        //    @Transactional 이 그것을 보장한다.
+        if (idempotent && processedRepository.existsById(event.eventId)) {
+            return ApplyResult.Skipped(event.userId, event.eventId.toString())
+        }
+
         val entity = repository.findById(event.userId).orElseGet {
             UserBalance(userId = event.userId)
         }
@@ -80,9 +95,42 @@ class BalanceService(
 
         entity.updatedAt = Instant.now()
         repository.save(entity)
+
+        if (idempotent) {
+            // 거절된 이벤트도 기록한다. 거절 역시 '처리한 결과'이므로
+            // 재생 시 다시 거절 카운트가 늘어나면 안 된다.
+            processedRepository.save(
+                ProcessedEvent(
+                    eventId = event.eventId,
+                    userId = event.userId,
+                    eventType = event.eventType,
+                )
+            )
+        }
+
         return result
     }
 
     @Transactional(readOnly = true)
     fun all(): List<UserBalance> = repository.findAll().sortedBy { it.userId }
+
+    /**
+     * 잔액 전체를 비운다. `rebuild` 에서만 쓴다.
+     *
+     * **로그가 원본이므로 이것을 지워도 복원할 수 있다.**
+     * 이 한 줄이 `rebuild`(정확히 복원)와 `replay`(두 배가 됨)를 가른다.
+     */
+    @Transactional
+    fun clearAll() {
+        repository.deleteAll()
+        // 처리 기록도 함께 비운다. 그러지 않으면 rebuild 가 전부 skip 되어
+        // 잔액이 비어 있는 채로 끝난다.
+        processedRepository.deleteAll()
+        log.warn("잔액과 처리 기록을 비웠습니다. 로그로부터 재구축됩니다.")
+    }
+
+    @Transactional(readOnly = true)
+    fun processedCount(): Long = processedRepository.count()
+
+    fun isIdempotent(): Boolean = idempotent
 }

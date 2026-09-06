@@ -52,6 +52,8 @@
 | [KS-19](issues/KS-19-worker-scale-out.md) | 워커 인스턴스 확장 + 파티션 배정 화면 | FEAT | 4단계 | DONE |
 | [KS-20](issues/KS-20-order-broken-experiment.md) | ★ 순서가 깨지면 잔액이 틀어진다 (실험 A) | EXPERIMENT | 4단계 | DONE |
 | [KS-21](issues/KS-21-rebalance-experiment.md) | 리밸런싱 관찰 (실험 B) | EXPERIMENT | 4단계 | DONE |
+| [KS-22](issues/KS-22-replay-api.md) | 재생 API — rebuild / replay | FEAT | 5단계 | DONE |
+| [KS-23](issues/KS-23-idempotency-experiment.md) | ★ 재생하면 두 배가 된다 → 멱등성 | EXPERIMENT | 5단계 | DONE |
 
 4~7단계 작업은 [로드맵](planning/04-roadmap.md)에 분해되어 있으며, 착수 시점에 티켓으로 발급한다.
 
@@ -72,5 +74,6 @@
 |---|---|
 | [TS-1](troubleshooting/TS-1-advertised-listeners.md) | KRaft 브로커가 `advertised.listeners ... 0.0.0.0` 로 기동 실패 |
 | [TS-2](troubleshooting/TS-2-poison-pill.md) | 역직렬화 불가 메시지 하나가 컨슈머 전체를 멈춘다 (poison pill) |
+| [TS-3](troubleshooting/TS-3-seek-callback.md) | 런타임 seek 이 컨슈머를 깨뜨린다 — 콜백 두 종류 구분 |
 
 > Kafka는 설정 하나 때문에 안 되는 경우가 많다. 한참 붙잡은 문제는 반드시 `troubleshooting/`에 남긴다.

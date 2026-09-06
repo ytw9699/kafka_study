@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useBalanceStore } from '../stores/balance'
 import { useLedgerStore } from '../stores/ledger'
 
@@ -56,6 +56,29 @@ const partialData = computed(() =>
 function fmt(n: number | null) {
   return n === null ? '—' : n.toLocaleString('ko-KR')
 }
+
+const busy = ref(false)
+const lastAction = ref<string | null>(null)
+
+/**
+ * 재생 두 종류.
+ *
+ * 차이는 **잔액 테이블을 비우느냐** 한 줄뿐인데,
+ * 그것이 "정확히 복원"과 "두 배가 됨"을 가른다.
+ */
+async function runReplay(mode: 'rebuild' | 'replay') {
+  busy.value = true
+  lastAction.value = null
+  try {
+    const res = await fetch(`/api/balance/${mode}`, { method: 'POST' })
+    const data = await res.json()
+    lastAction.value = `${data.mode} → p${data.partitions.join(', p')} 되감음`
+  } catch (e) {
+    lastAction.value = `실패: ${e}`
+  } finally {
+    busy.value = false
+  }
+}
 </script>
 
 <template>
@@ -99,6 +122,16 @@ function fmt(n: number | null) {
       </tbody>
     </table>
     <p v-else class="empty">거래를 발생시키면 잔액이 여기에 나타납니다.</p>
+
+    <div class="replay">
+      <button :disabled="busy" @click="runReplay('rebuild')">
+        rebuild — 잔액 비우고 재생
+      </button>
+      <button class="danger" :disabled="busy" @click="runReplay('replay')">
+        replay — 잔액 유지한 채 재생 😱
+      </button>
+    </div>
+    <p v-if="lastAction" class="action">{{ lastAction }}</p>
 
     <p v-if="partialData" class="note warn">
       ⚠️ 화면을 켜기 <strong>전</strong>에 발행된 거래가 있어 기대 잔액이 부족하게 계산됩니다.
@@ -158,6 +191,11 @@ tr.mismatch { background: #3a1c1c; }
 tr.mismatch .diff { color: #f99; font-weight: 700; }
 
 .empty { color: var(--muted); font-size: 13px; padding: 12px 0; }
+
+.replay { display: flex; gap: 6px; margin-top: 12px; }
+.replay button { flex: 1; font-size: 12px; padding: 7px; }
+.replay .danger { background: #4a2020; color: #f99; }
+.action { margin: 6px 0 0; font-size: 11px; color: var(--muted); font-family: ui-monospace, monospace; }
 .note {
   margin: 10px 0 0;
   font-size: 11px;

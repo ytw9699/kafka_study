@@ -4,7 +4,9 @@ import com.ytw.kafkastudy.balanceworker.domain.ApplyResult
 import com.ytw.kafkastudy.balanceworker.domain.BalanceService
 import com.ytw.kafkastudy.common.LedgerEvent
 import org.slf4j.LoggerFactory
+import org.apache.kafka.common.TopicPartition
 import org.springframework.kafka.annotation.KafkaListener
+import org.springframework.kafka.listener.ConsumerSeekAware
 import org.springframework.kafka.support.KafkaHeaders
 import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Component
@@ -31,8 +33,29 @@ import org.springframework.stereotype.Component
 @Component
 class LedgerConsumer(
     private val balanceService: BalanceService,
-) {
+    private val throttle: ReplayThrottle,
+    private val replay: ReplayCoordinator,
+) : ConsumerSeekAware {
+
     private val log = LoggerFactory.getLogger(javaClass)
+
+    // ⚠️ ConsumerSeekAware 는 **@KafkaListener 가 붙은 리스너 빈**이 구현해야 콜백이 불린다.
+    //    별도 빈으로 두면 Spring Kafka 가 찾지 못해 호출되지 않는다.
+    //    그래서 리스너가 콜백을 받아 ReplayCoordinator 에 넘긴다.
+
+    override fun registerSeekCallback(cb: ConsumerSeekAware.ConsumerSeekCallback) {
+        replay.registerCallback(cb)
+    }
+
+    override fun onPartitionsAssigned(
+        assignments: Map<TopicPartition, Long>,
+        cb: ConsumerSeekAware.ConsumerSeekCallback,
+    ) {
+        // 여기서 seekToBeginning 을 부르지 않는다.
+        // 기동 시 자동 재생은 실무 패턴이 아니다 — 커밋된 offset 에서 이어 읽는 것이 정상이다.
+        // cb 는 넘기지 않는다 — 즉시 seek 방식이라 HTTP 스레드에서 쓰면 컨슈머가 깨진다.
+        replay.onAssigned(assignments.keys)
+    }
 
     @KafkaListener(
         topics = ["\${app.topic.ledger-events}"],
@@ -43,6 +66,8 @@ class LedgerConsumer(
         @Header(KafkaHeaders.RECEIVED_PARTITION) partition: Int,
         @Header(KafkaHeaders.OFFSET) offset: Long,
     ) {
+        throttle.pause()
+
         when (val result = balanceService.apply(event)) {
             is ApplyResult.Applied -> log.info(
                 "적용 p{}#{} {} {} {} → {}",
@@ -53,6 +78,11 @@ class LedgerConsumer(
             is ApplyResult.Rejected -> log.info(
                 "거절 p{}#{} {} 잔액={} 요청={}",
                 partition, offset, event.userId, result.balance, result.requested,
+            )
+
+            is ApplyResult.Skipped -> log.info(
+                "건너뜀 p{}#{} {} eventId={} (이미 처리함)",
+                partition, offset, event.userId, result.eventId,
             )
         }
     }
