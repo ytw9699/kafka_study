@@ -20,8 +20,8 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.value.default.type: com.archseoul.kafkastudy.common.LedgerEvent
-        spring.json.trusted.packages: com.archseoul.kafkastudy.common
+        spring.json.value.default.type: com.ytw.kafkastudy.common.LedgerEvent
+        spring.json.trusted.packages: com.ytw.kafkastudy.common
         spring.json.use.type.headers: false
 
 app:
@@ -37,4 +37,4 @@ server:
 
 logging:
   level:
-    com.archseoul.kafkastudy: INFO
+    com.ytw.kafkastudy: INFO

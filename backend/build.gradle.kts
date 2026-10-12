@@ -17,7 +17,7 @@ plugins {
 }
 
 allprojects {
-    group = "com.archseoul.kafkastudy"
+    group = "com.ytw.kafkastudy"
     version = "0.0.1-SNAPSHOT"
 
     repositories {
