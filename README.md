@@ -207,7 +207,7 @@ Redis Pub/Sub 은 알림을 **저장하지 않습니다.** 받는 쪽이 잠깐 
 앞의 다섯 개가 합쳐지면 **"같은 사용자의 거래는 한 워커가 순서대로, 다른 사용자들은 여러 워커가 동시에"** 가 됩니다.
 DLT 는 그 순서를 지키면서 실패한 거래를 어떻게 다룰지(7단계)에 쓰입니다.
 
-더 자세히 → [02. 설계서 6절 — 토픽 설계 · 파티션 키](docs/planning/02-architecture.md#6-토픽-설계) · [07. 메시지 큐 — Pub/Sub · 큐 · 로그의 차이](docs/planning/07-message-queue.md)
+더 자세히 → [02. 설계서 6번 — 토픽 설계 · 파티션 키](docs/planning/02-architecture.md#6-토픽-설계) · [07. 메시지 큐 — Pub/Sub · 큐 · 로그의 차이](docs/planning/07-message-queue.md)
 
 ---
 
@@ -225,7 +225,7 @@ DLT 는 그 순서를 지키면서 실패한 거래를 어떻게 다룰지(7단�
 **가장 의외였던 것** — 실패 처리를 아무것도 설정하지 않으면 워커가 멈출 줄 알았는데, Spring Kafka 기본값은 **10번 다시 하고 조용히 건너뛰었습니다.**
 멈추면 누군가 알아채지만, 조용히 건너뛰면 **틀린 잔액이 정상처럼** 보입니다. → [KS-35](docs/issues/KS-35-failure-handling.md)
 
-전체 회고 → [06. 진행 기록](docs/planning/06-progress.md) · 아래 6절에서 직접 따라 해 볼 수 있습니다.
+전체 회고 → [06. 진행 기록](docs/planning/06-progress.md) · 아래 6번에서 직접 따라 해 볼 수 있습니다.
 
 ---
 
@@ -316,7 +316,7 @@ docker compose -f docker/docker-compose.yml down -v
 
 Kafka와 DB 데이터가 모두 지워집니다. 백엔드를 끄고 실행한 뒤 ①부터 다시 시작하세요.
 
-막혔다면 → [트러블슈팅](docs/troubleshooting/) · [02. 설계서 5절 — 인프라 구성](docs/planning/02-architecture.md#5-인프라-구성)
+막혔다면 → [트러블슈팅](docs/troubleshooting/) · [02. 설계서 5번 — 인프라 구성](docs/planning/02-architecture.md#5-인프라-구성)
 
 ---
 
@@ -381,7 +381,7 @@ Kafka와 DB 데이터가 모두 지워집니다. 백엔드를 끄고 실행한 �
 
 멱등 처리는 기본값이 **꺼져 있습니다.** 두 배가 되는 문제를 먼저 겪어 보라는 의도입니다. → [KS-23](docs/issues/KS-23-idempotency-experiment.md)
 
-> 실험 D(부정탐지 서비스가 나중에 합류)는 2차 과제라 아직 없습니다. 실험 이름은 [01. 기획서 7절](docs/planning/01-planning.md#7-눈으로-확인하는-실험)과 같습니다.
+> 실험 D(부정탐지 서비스가 나중에 합류)는 2차 과제라 아직 없습니다. 실험 이름은 [01. 기획서 7번](docs/planning/01-planning.md#7-눈으로-확인하는-실험)과 같습니다.
 
 <table>
 <tr><th>replay 전 — 일치</th><th>replay 후 — 워커 잔액이 정확히 2배</th></tr>
@@ -531,7 +531,7 @@ DLT 에 쌓인 거래는 Kafka UI(<http://localhost:8090>)의 `ledger-events.DLT
 | 7 | 실패 처리 — 재시도, DLT, 사용자 보류, 깨진 메시지 격리 | ✅ `step-7` — [KS-35](docs/issues/KS-35-failure-handling.md) |
 | - | 처리량 실험 — 워커 · 파티션 · 배치, 느린 처리가 일으키는 리밸런싱 | 대기 → [KS-29](docs/issues/KS-29-throughput-experiment.md) |
 
-단계별 작업 분해 → [04. 작업 로드맵](docs/planning/04-roadmap.md) · 1차 이후 고친 것 → [06. 진행 기록 9절](docs/planning/06-progress.md#9-1차-완결-이후--다시-검증하며-고친-것)
+단계별 작업 분해 → [04. 작업 로드맵](docs/planning/04-roadmap.md) · 1차 이후 고친 것 → [06. 진행 기록 9번](docs/planning/06-progress.md#9-1차-완결-이후--다시-검증하며-고친-것)
 
 `main` 에 머지한 단계마다 태그를 붙여 두었습니다(`step-0` ~ `step-5`, `step-7`). 6단계는 아직 하지 않아 `step-6` 은 없습니다. 특정 단계의 코드를 보고 싶다면:
 
