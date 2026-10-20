@@ -8,7 +8,7 @@
 | **상태** | DONE |
 | **단계** | - (화면 보강) |
 | **브랜치** | `fix/KS-42-expected-balance-history` |
-| **PR** | - |
+| **PR** | [#53](https://github.com/ytw9699/kafka_study/pull/53) |
 
 ## 배경
 
