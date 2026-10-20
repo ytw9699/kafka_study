@@ -2,6 +2,7 @@ package com.ytw.kafkastudy.balanceworker.consume
 
 import com.ytw.kafkastudy.balanceworker.domain.WorkerAssignment
 import com.ytw.kafkastudy.balanceworker.domain.WorkerAssignmentRepository
+import jakarta.annotation.PreDestroy
 import java.time.Instant
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.common.TopicPartition
@@ -39,6 +40,10 @@ class AssignmentTracker(
     @Volatile
     private var current: Set<Int> = emptySet()
 
+    /** 종료 중인가. 켜지면 하트비트를 멈추고 DB 에 `stopped` 를 남긴다. */
+    @Volatile
+    private var stopping = false
+
     override fun onPartitionsAssigned(
         consumer: Consumer<*, *>,
         partitions: Collection<TopicPartition>,
@@ -66,7 +71,24 @@ class AssignmentTracker(
      */
     @Scheduled(fixedDelay = 2_000)
     fun heartbeat() {
+        if (stopping) return
         save(bumpGeneration = false)
+    }
+
+    /**
+     * 정상 종료 표시.
+     *
+     * 리스너 컨테이너가 먼저 멈춰 파티션을 반납한 뒤([onPartitionsRevokedBeforeCommit]) 이 빈이 정리된다.
+     * 여기서 `stopped` 를 남겨야 화면이 "놀고 있음"이 아니라 "정상 종료"로 보여줄 수 있다.
+     *
+     * `kill -9` 로 죽으면 이 메서드도 불리지 않는다.
+     */
+    @PreDestroy
+    fun markStopped() {
+        stopping = true
+        current = emptySet()
+        save(bumpGeneration = false)
+        log.info("정상 종료 기록 worker={}", workerId)
     }
 
     @Transactional
@@ -75,6 +97,7 @@ class AssignmentTracker(
         entity.partitions = current.sorted().joinToString(",")
         if (bumpGeneration) entity.generation += 1
         entity.lastHeartbeat = Instant.now()
+        entity.stopped = stopping
         repository.save(entity)
     }
 }

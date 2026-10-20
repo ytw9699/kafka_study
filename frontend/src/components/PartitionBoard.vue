@@ -9,6 +9,8 @@ interface WorkerRow {
   secondsSinceHeartbeat: number
   /** 하트비트가 최근인가. `kill -9`로 죽으면 배정 기록은 남지만 false가 된다. */
   alive: boolean
+  /** 정상 종료했는가. 파티션을 반납하고 스스로 남긴 기록이다. */
+  stopped: boolean
 }
 
 interface WorkersResponse {
@@ -46,7 +48,10 @@ onUnmounted(() => {
 const ALL_PARTITIONS = [0, 1, 2]
 
 const alive = computed(() => workers.value.filter((w) => w.alive))
-const dead = computed(() => workers.value.filter((w) => !w.alive))
+/** 하트비트가 끊긴 워커 — `kill -9` 처럼 알릴 틈 없이 죽은 경우. */
+const dead = computed(() => workers.value.filter((w) => !w.alive && !w.stopped))
+/** 스스로 파티션을 반납하고 종료한 워커. */
+const stopped = computed(() => workers.value.filter((w) => w.stopped))
 
 /** 아무도 담당하지 않는 파티션. 리밸런싱이 진행 중이면 잠시 나타난다. */
 const orphaned = computed(() => ALL_PARTITIONS.filter((p) => !assigned.value.includes(p)))
@@ -68,7 +73,8 @@ const idle = computed(() => alive.value.filter((w) => w.partitions.length === 0)
       <div v-for="w in workers" :key="w.workerId" class="worker" :class="{ dead: !w.alive }">
         <div class="wid">
           {{ w.workerId }}
-          <span v-if="!w.alive" class="tag">죽음 ({{ w.secondsSinceHeartbeat }}s)</span>
+          <span v-if="w.stopped" class="tag stopped">정상 종료</span>
+          <span v-else-if="!w.alive" class="tag">죽음 ({{ w.secondsSinceHeartbeat }}s)</span>
           <span v-else-if="!w.partitions.length" class="tag idle">놀고 있음</span>
         </div>
         <div class="parts">
@@ -97,9 +103,14 @@ const idle = computed(() => alive.value.filter((w) => w.partitions.length === 0)
       — 리밸런싱 중이거나 워커가 부족합니다. 그동안 이 파티션은 처리되지 않습니다.
     </p>
 
+    <p v-if="stopped.length" class="note">
+      정상 종료한 워커는 <code>onPartitionsRevoked</code> 에서 파티션을 반납하고
+      스스로 종료를 기록합니다. 그래서 재배정이 빠릅니다.
+    </p>
+
     <p v-if="dead.length" class="note">
       죽은 워커의 배정 기록이 남아 있습니다.
-      <code>kill</code> 로 종료하면 <code>onPartitionsRevoked</code> 가 불리지 않아
+      <code>kill -9</code> 로 종료하면 <code>onPartitionsRevoked</code> 가 불리지 않아
       DB를 정리할 기회가 없기 때문입니다.
       <strong>"죽었다"를 아는 유일한 방법은 "한동안 소식이 없다"뿐입니다</strong>
       — Kafka도 <code>session.timeout.ms</code> 로 같은 판단을 합니다.
@@ -135,6 +146,7 @@ header { display: flex; justify-content: space-between; align-items: baseline; }
   color: #f99;
 }
 .tag.idle { background: #4a3f20; color: #e8c86a; }
+.tag.stopped { background: #2a3a4a; color: #9cc4e8; }
 .parts { display: flex; gap: 4px; flex-wrap: wrap; }
 .none { color: var(--muted); }
 .gen { text-align: right; font-size: 11px; color: var(--muted); }

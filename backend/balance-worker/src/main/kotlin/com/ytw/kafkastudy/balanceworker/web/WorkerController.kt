@@ -31,7 +31,9 @@ class WorkerController(
                     lastHeartbeat = it.lastHeartbeat.toString(),
                     secondsSinceHeartbeat = silence.seconds,
                     // 하트비트가 2초 주기이므로 8초 넘게 소식이 없으면 죽은 것으로 본다.
-                    alive = silence.seconds < 8,
+                    // 정상 종료를 기록했으면 하트비트와 무관하게 살아 있지 않다.
+                    alive = !it.stopped && silence.seconds < 8,
+                    stopped = it.stopped,
                 )
             }
         return WorkersResponse(
@@ -57,4 +59,6 @@ data class WorkerRow(
     val secondsSinceHeartbeat: Long,
     /** 하트비트가 최근인가. `kill -9` 로 죽으면 배정 기록은 남지만 이 값이 false 가 된다. */
     val alive: Boolean,
+    /** 정상 종료했는가. 파티션을 반납하고 스스로 남긴 기록이다. */
+    val stopped: Boolean,
 )
