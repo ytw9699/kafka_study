@@ -8,7 +8,7 @@
 | **상태** | DONE |
 | **단계** | - (문서 보강) |
 | **브랜치** | `docs/KS-32-docs-navigation` |
-| **PR** | - |
+| **PR** | [#42](https://github.com/ytw9699/kafka_study/pull/42) |
 
 ## 배경
 

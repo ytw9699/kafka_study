@@ -10,6 +10,10 @@
 | **브랜치** | `docs/project-planning` |
 | **PR** | [#1](https://github.com/ytw9699/kafka_study/pull/1) |
 
+> 📌 **주제를 바꾸기 전의 기록입니다.** 이 프로젝트는 처음에 "주문 · 매출"로 시작했다가
+> [KS-13](KS-13-pivot-ledger.md)에서 **포인트 적립 · 사용**으로 바꿨습니다. 아래 내용의 주문 · 매출 · `order-service` 등은 그 이전 설계입니다.
+
+
 ## 배경
 
 Kafka를 학습하려는데, 대부분의 자료가 "메시지를 발행하고 구독한다"에서 끝난다. 그건 RabbitMQ도 SQS도 Redis Pub/Sub도 한다. **왜 굳이 Kafka인가**에 대한 답이 남지 않는다.

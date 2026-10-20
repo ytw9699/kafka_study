@@ -10,6 +10,10 @@
 | **브랜치** | `docs/KS-12-scenario-cancellation` |
 | **PR** | [#6](https://github.com/ytw9699/kafka_study/pull/6) |
 
+> 📌 **주제를 바꾸기 전의 기록입니다.** 이 프로젝트는 처음에 "주문 · 매출"로 시작했다가
+> [KS-13](KS-13-pivot-ledger.md)에서 **포인트 적립 · 사용**으로 바꿨습니다. 아래 내용의 주문 · 매출 · `order-service` 등은 그 이전 설계입니다.
+
+
 ## 배경
 
 기존 시나리오에 대해 정당한 반문이 나왔다.
