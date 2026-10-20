@@ -72,7 +72,7 @@ H2 파일 모드도 이 규모에서는 굴러가지만, **4단계 upsert 문법
 | PostgreSQL | `INSERT ... ON CONFLICT ... DO UPDATE` |
 | H2 | `MERGE INTO ... KEY(...)` |
 
-가장 값진 학습 구간에서 H2 전용 문법을 익히면 실무 전이가 안 된다.
+가장 많이 배우는 구간에서 H2 전용 문법을 익히면 실무 전이가 안 된다.
 추가로 embedded 파일 모드는 한 JVM만 열 수 있어(file lock) 인스턴스 확장 실험이 막힌다.
 
 **디버깅 표면을 줄이기 위해 Postgres는 0단계가 아니라 1단계에서 추가한다.**

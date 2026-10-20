@@ -51,7 +51,7 @@ class BalanceService(
      * 4단계에서 파티션 키를 흩뜨리면 잔액이 틀어지는 근거다.
      *
      * 멱등 처리(같은 `eventId` 를 두 번 받으면 무시)는 **5단계에서 추가한다.**
-     * 재생 시 포인트가 두 배가 되는 문제를 먼저 겪어야 필요성이 몸에 남는다.
+     * 재생 시 포인트가 두 배가 되는 문제를 먼저 겪어야 왜 필요한지 확실히 알게 된다.
      */
     @Transactional
     fun apply(event: LedgerEvent): ApplyResult {

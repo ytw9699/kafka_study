@@ -42,7 +42,7 @@ KS-37 은 "예정 · 미착수" 같은 낱말 검색으로 찾았기 때문에, 
 | [03. 브랜치 전략](../conventions/03-branch-strategy.md) | 첫 화면 문서(README)는 단계와 무관해도 `main` 반영 가능하다는 예외 — KS-38 에서 실제로 한 일을 규칙에 |
 | [06. 진행 기록](../planning/06-progress.md) | 삽질 기록의 TS-2 에 "7단계에서 해결", `main` 히스토리에 문서 머지가 섞였다는 설명 |
 | [KS-29](KS-29-throughput-experiment.md) | 정확성 목록에 실패 처리, `BLOCKING` 재시도도 "느린 처리"라 `max.poll.interval.ms` 와 이어진다는 점 |
-| [KS-40](KS-40-readme-idempotent-cmd.md) | "KS-39 예약" 표현이 "번호를 미리 예약하지 않는다" 규칙과 어긋남 → 사정과 빈 번호 가능성을 정직하게 |
+| [KS-40](KS-40-readme-idempotent-cmd.md) | "KS-39 예약" 표현이 "번호를 미리 예약하지 않는다" 규칙과 어긋남 → 사정과 빈 번호 가능성을 있는 그대로 |
 
 ### 점검했지만 문제없던 것
 
