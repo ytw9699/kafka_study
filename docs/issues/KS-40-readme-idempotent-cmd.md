@@ -8,7 +8,7 @@
 | **상태** | DONE |
 | **단계** | - (문서 보강) |
 | **브랜치** | `fix/KS-40-readme-idempotent-cmd` |
-| **PR** | - |
+| **PR** | [#50](https://github.com/ytw9699/kafka_study/pull/50) |
 
 > KS-39 는 다른 작업(README 스크린샷)에 먼저 예약되어 있어 40 을 쓴다.
 
