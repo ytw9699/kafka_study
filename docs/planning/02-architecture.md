@@ -40,6 +40,7 @@ flowchart TB
 
     subgraph INF["인프라 — Docker Compose"]
         K["Apache Kafka (KRaft) :9092<br/>topic: ledger-events<br/>partitions 3 · key userId"]
+        DLT["topic: ledger-events.DLT<br/>처리 못 한 거래 (7단계)"]
         KUI["Kafka UI :8090"]
         PG[("PostgreSQL :5432<br/>balancedb · frauddb")]
         KUI -.조회.-> K
@@ -55,6 +56,7 @@ flowchart TB
     K ==>|"subscribe"| BWL
     K ==>|"subscribe"| FSL
     BWA --> PG
+    BWA -.->|"다시 해도 실패"| DLT
     FSL --> PG
 ```
 
@@ -106,6 +108,9 @@ flowchart TB
 - 파티션을 (재)배정받을 때마다 `worker_assignment` 테이블에 기록 → 프론트가 시각화
 - 잔액 조회 / 파티션 배정 조회 REST API 제공 (어느 인스턴스에 물어도 같은 DB를 보므로 동일)
 - 5단계에서 **명시적 재생 API**를 갖는다
+- 7단계에서 **실패 처리**를 갖는다 — `APP_ERROR_MODE`(`DEFAULT` · `NON_BLOCKING` · `BLOCKING`)로 방식을 바꿔 비교한다.
+  `BLOCKING` 은 그 자리에서 다시 시도하고, 다시 해도 안 되는 거래는 `ledger-events.DLT` 로 빼며 **그 사용자를 보류**한다.
+  깨진 메시지는 `ErrorHandlingDeserializer` 로 워커를 멈추지 않고 DLT 로 뺀다 ([KS-35](../issues/KS-35-failure-handling.md))
 
 `POINT_SPENT` 처리 시 잔액이 부족하면 **거절**하고 그 사실을 기록한다.
 → 순서가 뒤바뀌면 이 판정이 달라지므로 **잔액이 틀어진다.** 실험 A의 원리.
@@ -275,7 +280,7 @@ flowchart LR
 |---|---|---|
 | `TxForm` | userId·금액·적립/사용 입력. userId 프리셋 버튼 | **같은 userId로 연속 거래**를 빠르게 만드는 도구 |
 | `LedgerFeed` | 수신 이벤트 목록 + **partition/offset 뱃지** | 같은 userId가 같은 파티션에 들어가는지 눈으로 확인 |
-| `BalancePanel` | 사용자별 잔액 + **기대값과의 차이** | **실험 A에서 잔액이 틀어지는 것이 보이는 화면** |
+| `BalancePanel` | 사용자별 잔액 + **기대값과의 차이**, rebuild · replay 버튼, 실패 처리 모드와 **"보류"** 사용자 | **실험 A · C · E 에서 잔액이 틀어지는 것이 보이는 화면** |
 | `PartitionBoard` ★ | 워커별 담당 파티션, 마지막 하트비트 | **리밸런싱이 실시간으로 보이는 화면** |
 
 > `BalancePanel`은 프론트가 이벤트를 직접 합산한 **기대 잔액**을 함께 표시한다.
@@ -298,6 +303,8 @@ frontend/
 │   ├── composables/
 │   │   └── useSse.ts
 │   └── api/
+│       ├── ledger.ts        # ledger-api 호출 (거래 · 연속 거래 · 키 모드)
+│       └── types.ts
 └── vite.config.ts           # dev 프록시로 CORS 회피
 ```
 
@@ -519,10 +526,25 @@ data: { "eventId": "...", "eventType": "POINT_EARNED", "userId": "user-42",
 ```json
 {
   "balances": [
-    { "userId": "user-42", "balance": 3000, "appliedEvents": 12, "rejected": 1 }
+    { "userId": "user-42", "balance": 3000, "appliedEvents": 12, "rejectedEvents": 1,
+      "updatedAt": "2026-10-20T15:02:11Z" }
+  ],
+  "totalApplied": 12,
+  "totalRejected": 1,
+  "idempotent": false,
+  "processedEvents": 0,
+  "errorMode": "BLOCKING",
+  "quarantinedUsers": [
+    { "userId": "user-6", "reason": "PermanentFailureException: 영구 실패 표시가 있는 거래 ..." }
   ]
 }
 ```
+
+| 필드 | 단계 | 의미 |
+|---|---|---|
+| `idempotent` · `processedEvents` | 5단계 | 멱등 처리가 켜져 있는지, `processed_event` 에 기록된 건수 |
+| `errorMode` | 7단계 | 실패 처리 모드 (`DEFAULT` · `NON_BLOCKING` · `BLOCKING`) — 화면 ③ 위쪽에 표시 |
+| `quarantinedUsers` | 7단계 | 거래가 DLT 로 빠져 처리를 **보류**한 사용자 — 화면에 "보류"로 표시 |
 
 #### `GET /api/workers` — 워커·파티션 배정 현황 ★
 
@@ -556,6 +578,9 @@ data: { "eventId": "...", "eventType": "POINT_EARNED", "userId": "user-42",
 
 > ⚠️ **요청을 받은 워커가 맡은 파티션만** 되감는다. 그런데 잔액은 **전부** 비운다.
 > 워커가 여러 개일 때 부르면 다른 워커 몫의 잔액이 비워진 채 다시 채워지지 않는다. **워커 1개로 실행한다.**
+
+> 7단계부터는 **보류(`quarantined_user`)도 함께 비운다.** 처음부터 다시 읽으면 실패할 거래는 다시 실패해 다시 보류된다.
+> `NON_BLOCKING` 모드에서는 rebuild · replay 모두 **409** 로 거절한다 — 재시도 토픽을 읽는 컨슈머도 같은 리스너를 써서 되감기 콜백이 섞이기 때문이다.
 
 #### `POST /api/balance/replay` — 재생 *(5단계 실험용)*
 
