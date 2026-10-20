@@ -164,7 +164,7 @@ Postgres는 아직 띄우지 않는다. Kafka만으로 개념을 먼저 잡는�
 | 4-3 | `POST /api/config/partition-key-mode` → `RANDOM` | 응답의 `keyMode` 변경 |
 | 4-4 | `POST /api/tx/burst`로 연속 거래 투입 | 같은 userId가 여러 파티션에 흩어짐 |
 | 4-5 | ★ **화면에서 잔액과 기대 잔액이 어긋나는 것 확인** | **숫자가 다르다** 😱 |
-| 4-6 | 키를 `USER_ID`로 되돌리고 `rebuild` | **숫자가 일치한다** ✅ |
+| 4-6 | 키를 `USER_ID`로 되돌리고 `rebuild` | ~~숫자가 일치한다~~ → **이미 흩어진 거래는 rebuild 해도 복구되지 않는다.** 초기화 후 다시 발행해야 일치 ([KS-20](../issues/KS-20-order-broken-experiment.md) 정정) |
 
 > **4-5가 이 프로젝트 전체의 하이라이트다.**
 > 파티션 키가 왜 존재하는지를 설명이 아니라 **틀린 숫자로** 배운다.
@@ -237,6 +237,8 @@ Postgres는 아직 띄우지 않는다. Kafka만으로 개념을 먼저 잡는�
 ---
 
 ## 7단계 — 실패 처리 & DLT *(2차)* — ✅ 완료 [KS-35](../issues/KS-35-failure-handling.md)
+
+> 완료: [KS-35](../issues/KS-35-failure-handling.md) — 태그 `step-7`
 
 대상은 `balance-worker`. **요구사항 1(순서)과 6(실패 처리)이 충돌하는 지점이다.**
 

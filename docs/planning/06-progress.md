@@ -26,7 +26,7 @@
 | 6 (2차) | `fraud-service` 합류 | 미착수 | - |
 | 7 (2차) | 실패 처리 · DLT | [KS-35](../issues/KS-35-failure-handling.md) | `step-7` |
 
-`main` 브랜치의 커밋 히스토리가 그대로 학습 진도표다.
+`main` 브랜치의 커밋 히스토리가 그대로 학습 진도표다. (7단계 뒤에는 README 를 첫 화면에 반영하려고 문서 보강 머지도 들어갔다 — [KS-38](../issues/KS-38-step7-tag-docs.md))
 
 ```bash
 git log --oneline main     # 단계별 스냅샷
@@ -243,7 +243,7 @@ Kafka 는 이것을 **generation id**(fencing token)로 막는다. 실험에서 
 | 문서 | 증상 | 원인 |
 |---|---|---|
 | [TS-1](../troubleshooting/TS-1-advertised-listeners.md) | 브로커가 기동 실패 | `advertised.listeners` 에 `CONTROLLER` 누락 → `listeners` 의 `0.0.0.0` 을 가져다 씀 |
-| [TS-2](../troubleshooting/TS-2-poison-pill.md) | 컨슈머가 무한 재시도로 멈춤 | CLI 실습 때 넣은 원시 JSON 이 토픽에 남아 역직렬화 실패 (**poison pill**) |
+| [TS-2](../troubleshooting/TS-2-poison-pill.md) | 컨슈머가 무한 재시도로 멈춤 | CLI 실습 때 넣은 원시 JSON 이 토픽에 남아 역직렬화 실패 (**poison pill**). 7단계에서 `ErrorHandlingDeserializer` 로 해결 |
 | [TS-3](../troubleshooting/TS-3-seek-callback.md) | 런타임 seek 이 컨슈머를 깨뜨림 | `ConsumerSeekCallback` 이 **두 종류**이고 스레드 안전성이 정반대 |
 
 세 건 모두 **에러 메시지만으로는 원인을 알 수 없었고**, 설정이나 프레임워크 내부를 들여다봐야 했다.

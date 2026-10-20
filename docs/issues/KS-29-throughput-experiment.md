@@ -12,7 +12,7 @@
 
 ## 배경
 
-지금까지 확인한 것은 Kafka의 **정확성** 쪽이다 — 순서([KS-20](KS-20-order-broken-experiment.md)), 장애 인수([KS-21](KS-21-rebalance-experiment.md)), 재생 · 멱등([KS-23](KS-23-idempotency-experiment.md)).
+지금까지 확인한 것은 Kafka의 **정확성** 쪽이다 — 순서([KS-20](KS-20-order-broken-experiment.md)), 장애 인수([KS-21](KS-21-rebalance-experiment.md)), 재생 · 멱등([KS-23](KS-23-idempotency-experiment.md)), 실패 처리([KS-35](KS-35-failure-handling.md)).
 
 하지만 Kafka를 쓰는 가장 흔한 이유는 **처리량**이다. 대용량 스트리밍, 데이터 파이프라인, 로그 집계가 모두
 "많이, 빠르게 받아 내고, 소비자를 늘려 수평 확장한다"에 기대고 있다.
@@ -29,6 +29,7 @@
 2. 소비가 발행보다 느릴 때 **lag** 이 쌓이고 빠지는 모습을 관찰
 3. 프로듀서 배치 설정이 **발행 처리량**을 얼마나 바꾸는가
 4. 처리가 느리면 **멀쩡한 워커가 그룹에서 쫓겨나는** 것을 확인한다 (`max.poll.interval.ms`)
+   — 7단계의 `BLOCKING` 재시도(2초 × 최대 30번, 약 1분)도 "느린 처리"다. 재시도 시간이 `max.poll.interval.ms`(기본 5분)를 넘으면 같은 일이 생긴다
 
 ## 실험 설계 (초안)
 
