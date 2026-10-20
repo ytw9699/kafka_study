@@ -1,6 +1,19 @@
 # 문서 인덱스
 
+[← README](../README.md)
+
 이 프로젝트는 Jira를 쓰지 않는다. **모든 기획·이슈·결정·트러블슈팅은 여기에 남긴다.**
+
+### 처음이라면
+
+| 시간이 있다면 | 읽을 것 |
+|---|---|
+| 3분 | [README](../README.md) — 무엇을 왜 만들었고 어떻게 돌려 보는지 |
+| 5분 | [KS-20](issues/KS-20-order-broken-experiment.md) — 키 하나 바꿨더니 잔액이 틀어지는 하이라이트 |
+| 10분 | [06. 진행 기록](planning/06-progress.md) — 무엇을 확인했고 무엇이 틀렸다가 고쳐졌나 |
+| 10분 | [07. 메시지 큐](planning/07-message-queue.md) — 큐를 쓰는 이유와 대가 |
+
+**티켓(`KS-N`) 문서는 "배경 → 한 일 → 결과 → 배운 것" 순서입니다.** 바쁘면 "배운 것"만 읽어도 됩니다.
 
 ## 규칙
 
@@ -43,6 +56,7 @@
 | [KS-28](issues/KS-28-readme-onboarding.md) | README 재작성 — 처음 보는 사람이 따라올 수 있게 | DOCS | DONE |
 | [KS-30](issues/KS-30-readme-build-first.md) | README 실행 절차에 "먼저 빌드" 단계 추가 | DOCS | DONE |
 | [KS-31](issues/KS-31-worker-status-and-pins.md) | 정상 종료한 워커가 "놀고 있음"으로 보이는 문제 수정, Kafka UI 버전 고정 | FIX | DONE |
+| [KS-32](issues/KS-32-docs-navigation.md) | 문서 이동 링크 · 한눈 요약 추가, 낡은 설계 내용 갱신, README 에 기간 명시 | DOCS | DONE |
 
 ### 단계별 (0~5단계 · 1차 완결)
 

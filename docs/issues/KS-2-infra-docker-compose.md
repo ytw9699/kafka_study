@@ -1,5 +1,7 @@
 # KS-2: 로컬 Kafka 인프라 구성
 
+[← 문서 목록](../README.md) · [README](../../README.md)
+
 | | |
 |---|---|
 | **타입** | FEAT |

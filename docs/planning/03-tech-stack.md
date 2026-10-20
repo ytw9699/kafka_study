@@ -1,5 +1,13 @@
 # 03. 기술 스택 결정서
 
+[← README](../../README.md) · [문서 목록](../README.md)
+
+> **이 문서 한눈에**
+> - 어떤 기술을 썼는지 (Kotlin · Spring Kafka · PostgreSQL · Vue · KRaft)
+> - **무엇을 왜 탈락시켰는지** — H2, Kubernetes, Avro, Kafka Streams 등
+> - 쓰려다 결국 안 쓴 것(Chart.js)과 그 이유
+
+
 선택한 스택과 **왜 그것을 골랐는지**, 그리고 **무엇을 탈락시켰는지** 기록한다.
 
 ## 최종 스택

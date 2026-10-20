@@ -1,5 +1,7 @@
 # KS-4: Gradle 멀티모듈 뼈대 + 공통 이벤트 모델
 
+[← 문서 목록](../README.md) · [README](../../README.md)
+
 | | |
 |---|---|
 | **타입** | CHORE |

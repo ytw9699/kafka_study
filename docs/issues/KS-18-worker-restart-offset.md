@@ -1,5 +1,7 @@
 # KS-18: 워커 재기동 — offset 이어읽기 확인
 
+[← 문서 목록](../README.md) · [README](../../README.md)
+
 | | |
 |---|---|
 | **타입** | EXPERIMENT |
