@@ -11,7 +11,7 @@ npm install && npm run dev
 ```
 
 <http://localhost:5173> 에서 열립니다. 백엔드(`ledger-api` :8081, `balance-worker` :8082)가 먼저 떠 있어야 합니다.
-실행 순서 전체는 [프로젝트 README 5절](../README.md#5-직접-실행해-보기-약-10분)을 보세요.
+실행 순서 전체는 [프로젝트 README 5번](../README.md#5-직접-실행해-보기-약-10분)을 보세요.
 
 ## 화면 구성
 
