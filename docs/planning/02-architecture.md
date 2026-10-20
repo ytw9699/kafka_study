@@ -405,14 +405,15 @@ Kafka는 **파티션 내부에서만** 순서를 보장한다. 토픽 전체 순
 
 키를 `RANDOM`으로 바꾸면 이 보장이 즉시 무너지고 잔액이 틀어진다 (실험 A).
 
-### 추가 토픽 (7단계)
+### 추가 토픽 (7단계, [KS-35](../issues/KS-35-failure-handling.md))
 
-| 토픽 | 용도 |
-|---|---|
-| `ledger-events-dlt` | 영구 실패 이벤트 격리 |
+| 토픽 | 만드는 곳 | 용도 |
+|---|---|---|
+| `ledger-events.DLT` | 워커 기동 시 `NewTopic` 빈 (파티션 3) | `BLOCKING` 모드 — 처리하지 못한 거래 · 깨진 메시지 보관. **원래 파티션 번호 그대로** 보낸다 |
+| `ledger-events-retry` · `ledger-events-dlt` | `NON_BLOCKING` 모드일 때 Spring 이 자동 생성 | 재시도 토픽 비교 실험용 |
 
-> **retry topic은 기본으로 쓰지 않는다.** 순서가 깨지기 때문이다 (실험 E).
-> 7단계에서 non-blocking retry가 왜 이 도메인에 맞지 않는지를 직접 확인한 뒤 blocking retry를 택한다.
+> **retry topic은 기본으로 쓰지 않는다.** 순서가 깨지기 때문이다 (실험 E — KS-35 에서 확인).
+> 실패 처리 모드는 `APP_ERROR_MODE` = `DEFAULT` | `NON_BLOCKING` | `BLOCKING` 으로 바꿔 비교한다.
 
 ---
 
@@ -618,6 +619,17 @@ DO UPDATE SET balance        = user_balance.balance + :delta,
 
 `ConsumerRebalanceListener.onPartitionsAssigned`에서 갱신한다.
 **리밸런싱을 화면에 보여주기 위한 테이블이다.**
+
+### balance-worker — `balancedb.quarantined_user` *(7단계에서 추가)*
+
+| 컬럼 | 타입 | 비고 |
+|---|---|---|
+| `user_id` | VARCHAR | PK |
+| `reason` | VARCHAR | 처음 DLT 로 빠진 이유 |
+| `quarantined_at` | TIMESTAMPTZ | |
+
+`BLOCKING` 모드에서 거래가 DLT 로 빠지면 그 사용자를 기록한다. 이후 그 사용자의 거래는 처리하지 않고 DLT 로 보낸다
+— 앞 거래를 건너뛰고 계산하면 잔액이 틀어지기 때문이다. `rebuild` 때 함께 비운다.
 
 ### balance-worker — `balancedb.processed_event` *(5단계에서 추가)*
 

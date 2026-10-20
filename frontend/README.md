@@ -19,7 +19,7 @@ npm install && npm run dev
 |---|---|---|
 | ① 거래 발생 | `components/TxForm.vue` | 적립 · 사용 버튼, **파티션 키 전환**(USER_ID ↔ RANDOM), 연속 거래 생성 |
 | ② 실시간 원장 피드 | `components/LedgerFeed.vue` | 들어온 거래가 **어느 파티션(p0 · p1 · p2)** 에 들어갔는지 색으로 표시 |
-| ③ 사용자별 잔액 | `components/BalancePanel.vue` | **워커 잔액 vs 기대 잔액**, 일치 · 불일치 판정, rebuild · replay 버튼 |
+| ③ 사용자별 잔액 | `components/BalancePanel.vue` | **워커 잔액 vs 기대 잔액**, 일치 · 불일치 판정, rebuild · replay 버튼, 실패 처리 모드와 **"보류"** 된 사용자 |
 | ④ 워커 · 파티션 배정 | `components/PartitionBoard.vue` | 워커별 담당 파티션, "놀고 있음" · "정상 종료" · "죽음" 표시 |
 
 ## 핵심 장치 — 기대 잔액
