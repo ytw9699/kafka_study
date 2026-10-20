@@ -2,6 +2,7 @@ package com.ytw.kafkastudy.balanceworker.consume
 
 import com.ytw.kafkastudy.balanceworker.domain.WorkerAssignment
 import com.ytw.kafkastudy.balanceworker.domain.WorkerAssignmentRepository
+import jakarta.annotation.PreDestroy
 import java.time.Instant
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.common.TopicPartition
@@ -29,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional
 class AssignmentTracker(
     private val repository: WorkerAssignmentRepository,
     @Value("\${server.port}") private val port: String,
+    @Value("\${app.topic.ledger-events}") private val topic: String,
 ) : ConsumerAwareRebalanceListener {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -39,11 +41,18 @@ class AssignmentTracker(
     @Volatile
     private var current: Set<Int> = emptySet()
 
+    /** 종료 중인가. 켜지면 하트비트를 멈추고 DB 에 `stopped` 를 남긴다. */
+    @Volatile
+    private var stopping = false
+
     override fun onPartitionsAssigned(
         consumer: Consumer<*, *>,
         partitions: Collection<TopicPartition>,
     ) {
-        current = partitions.map { it.partition() }.toSet()
+        // 재시도 토픽 모드에서는 재시도 토픽 컨슈머도 이 콜백을 부른다. 원래 토픽의 배정만 기록한다.
+        val main = partitions.filter { it.topic() == topic }
+        if (main.isEmpty()) return
+        current = main.map { it.partition() }.toSet()
         log.info("파티션 배정됨 worker={} partitions={}", workerId, current.sorted())
         save(bumpGeneration = true)
     }
@@ -54,6 +63,7 @@ class AssignmentTracker(
     ) {
         // 정상 종료나 리밸런싱 직전에 불린다.
         // kill -9 로 죽이면 이 콜백은 불리지 않는다 — 그래서 하트비트가 필요하다.
+        if (partitions.none { it.topic() == topic }) return
         log.info("파티션 반납 worker={} partitions={}", workerId, partitions.map { it.partition() }.sorted())
         current = emptySet()
         save(bumpGeneration = false)
@@ -66,7 +76,24 @@ class AssignmentTracker(
      */
     @Scheduled(fixedDelay = 2_000)
     fun heartbeat() {
+        if (stopping) return
         save(bumpGeneration = false)
+    }
+
+    /**
+     * 정상 종료 표시.
+     *
+     * 리스너 컨테이너가 먼저 멈춰 파티션을 반납한 뒤([onPartitionsRevokedBeforeCommit]) 이 빈이 정리된다.
+     * 여기서 `stopped` 를 남겨야 화면이 "놀고 있음"이 아니라 "정상 종료"로 보여줄 수 있다.
+     *
+     * `kill -9` 로 죽으면 이 메서드도 불리지 않는다.
+     */
+    @PreDestroy
+    fun markStopped() {
+        stopping = true
+        current = emptySet()
+        save(bumpGeneration = false)
+        log.info("정상 종료 기록 worker={}", workerId)
     }
 
     @Transactional
@@ -75,6 +102,7 @@ class AssignmentTracker(
         entity.partitions = current.sorted().joinToString(",")
         if (bumpGeneration) entity.generation += 1
         entity.lastHeartbeat = Instant.now()
+        entity.stopped = stopping
         repository.save(entity)
     }
 }

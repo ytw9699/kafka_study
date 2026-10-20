@@ -23,13 +23,22 @@ spring:
       #    전체 재생은 5단계의 명시적 API 로만 한다.
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      # 깨진 메시지(poison pill) 격리 — 7단계(KS-35).
+      #
+      # JsonDeserializer 를 바로 쓰면 읽지 못하는 메시지에서 poll 자체가 실패해
+      # 같은 메시지를 끝없이 다시 읽으며 멈춘다 (TS-2).
+      # ErrorHandlingDeserializer 로 감싸면 실패를 리스너 단계로 넘겨 에러 처리기가 DLT 로 뺄 수 있다.
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
         spring.json.value.default.type: com.ytw.kafkastudy.common.LedgerEvent
         spring.json.trusted.packages: com.ytw.kafkastudy.common
         spring.json.use.type.headers: false
 
 app:
+  # 실패 처리 모드 (7단계, KS-35) — DEFAULT | NON_BLOCKING | BLOCKING
+  # 자세한 비교는 ErrorHandlingConfig 참조.
+  error-mode: ${APP_ERROR_MODE:DEFAULT}
   # 멱등 처리 (5단계).
   #
   # 기본값 false — KS-23 에서 재생 시 잔액이 두 배가 되는 문제를 먼저 겪기 위함이다.

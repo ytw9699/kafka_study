@@ -10,10 +10,19 @@ export interface BalanceRow {
   updatedAt: string
 }
 
+/** 거래가 DLT 로 빠져 처리를 보류한 사용자 (7단계) */
+export interface QuarantinedRow {
+  userId: string
+  reason: string
+}
+
 interface BalancesResponse {
   balances: BalanceRow[]
   totalApplied: number
   totalRejected: number
+  /** 실패 처리 모드 — DEFAULT | NON_BLOCKING | BLOCKING */
+  errorMode: string
+  quarantinedUsers: QuarantinedRow[]
 }
 
 /**
@@ -27,6 +36,8 @@ export const useBalanceStore = defineStore('balance', () => {
   const rows = ref<BalanceRow[]>([])
   const totalApplied = ref(0)
   const totalRejected = ref(0)
+  const errorMode = ref('')
+  const quarantined = ref<QuarantinedRow[]>([])
   const online = ref(false)
   const error = ref<string | null>(null)
 
@@ -40,6 +51,8 @@ export const useBalanceStore = defineStore('balance', () => {
       rows.value = data.balances
       totalApplied.value = data.totalApplied
       totalRejected.value = data.totalRejected
+      errorMode.value = data.errorMode
+      quarantined.value = data.quarantinedUsers
       online.value = true
       error.value = null
     } catch {
@@ -63,5 +76,5 @@ export const useBalanceStore = defineStore('balance', () => {
 
   onUnmounted(stop)
 
-  return { rows, totalApplied, totalRejected, online, error, start, stop, fetchOnce }
+  return { rows, totalApplied, totalRejected, errorMode, quarantined, online, error, start, stop, fetchOnce }
 })

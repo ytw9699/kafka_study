@@ -1,5 +1,7 @@
 # KS-22: 재생 API — rebuild / replay
 
+[← 문서 목록](../README.md) · [README](../../README.md)
+
 | | |
 |---|---|
 | **타입** | FEAT |

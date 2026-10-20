@@ -44,6 +44,16 @@ class WorkerAssignment(
      */
     @Column(name = "last_heartbeat", nullable = false)
     var lastHeartbeat: Instant = Instant.now(),
+
+    /**
+     * 정상 종료했는가.
+     *
+     * 정상 종료하면 파티션을 반납한 뒤 이 값을 남긴다. 하트비트만으로 판단하면
+     * 종료 직후 몇 초 동안은 "살아 있는데 파티션이 없는 워커"로 보여 **놀고 있는 것처럼** 표시된다.
+     * `kill -9` 는 이 값을 남길 기회가 없으므로, 하트비트가 끊긴 것으로만 알 수 있다.
+     */
+    @Column(nullable = false, columnDefinition = "boolean not null default false")
+    var stopped: Boolean = false,
 )
 
 @Repository

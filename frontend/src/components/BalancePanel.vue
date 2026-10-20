@@ -43,6 +43,15 @@ const rows = computed<Row[]>(() => {
   })
 })
 
+/** 거래가 DLT 로 빠져 처리를 멈춘 사용자 (7단계, KS-35) */
+const quarantinedIds = computed(() => new Set(balance.quarantined.map((q) => q.userId)))
+
+const MODE_HELP: Record<string, string> = {
+  DEFAULT: 'Spring Kafka 기본값 — 즉시 10번 다시 하고, 안 되면 로그만 남기고 넘어간다',
+  NON_BLOCKING: '재시도 토픽 — 실패한 거래를 뒤로 미루고 다음 거래를 먼저 처리한다',
+  BLOCKING: '그 자리에서 기다리며 다시 시도 — 안 되면 DLT 로 보내고 그 사용자를 보류한다',
+}
+
 const mismatches = computed(() => rows.value.filter((r) => r.diff !== null && r.diff !== 0).length)
 
 /**
@@ -93,6 +102,9 @@ async function runReplay(mode: 'rebuild' | 'replay') {
     <div class="summary">
       <span>적용 <strong>{{ balance.totalApplied }}</strong></span>
       <span>거절 <strong>{{ balance.totalRejected }}</strong></span>
+      <span v-if="balance.errorMode" class="mode" :title="MODE_HELP[balance.errorMode]">
+        실패 처리 <code>{{ balance.errorMode }}</code>
+      </span>
       <span
         class="verdict"
         :class="mismatches ? 'bad' : 'good'"
@@ -111,7 +123,10 @@ async function runReplay(mode: 'rebuild' | 'replay') {
       </thead>
       <tbody>
         <tr v-for="r in rows" :key="r.userId" :class="{ mismatch: r.diff !== null && r.diff !== 0 }">
-          <td class="user">{{ r.userId }}</td>
+          <td class="user">
+            {{ r.userId }}
+            <span v-if="quarantinedIds.has(r.userId)" class="hold" title="거래가 DLT 로 빠져 이 사용자의 처리를 멈췄습니다">보류</span>
+          </td>
           <td class="num">{{ fmt(r.worker) }}</td>
           <td class="num">{{ fmt(r.expected) }}</td>
           <td class="num diff">
@@ -122,6 +137,13 @@ async function runReplay(mode: 'rebuild' | 'replay') {
       </tbody>
     </table>
     <p v-else class="empty">거래를 발생시키면 잔액이 여기에 나타납니다.</p>
+
+    <p v-if="balance.quarantined.length" class="note hold-note">
+      ⏸ <strong>보류 {{ balance.quarantined.length }}명</strong> —
+      거래가 DLT 로 빠져, 그 뒤 거래도 처리하지 않고 DLT 에 순서대로 쌓아 둡니다.
+      앞 거래를 건너뛰고 계산하면 잔액이 틀어지기 때문입니다. 다른 사용자는 계속 처리됩니다.
+      <span v-for="q in balance.quarantined" :key="q.userId" class="reason">{{ q.userId }}: {{ q.reason }}</span>
+    </p>
 
     <div class="replay">
       <button :disabled="busy" @click="runReplay('rebuild')">
@@ -164,6 +186,18 @@ header {
   margin-bottom: 10px;
 }
 .summary strong { color: var(--text); }
+.mode { font-size: 11px; color: var(--muted); cursor: help; }
+.hold {
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  background: #2a3a4a;
+  color: #9cc4e8;
+}
+.hold-note { font-size: 12px; }
+.hold-note .reason { display: block; color: var(--muted); font-family: ui-monospace, monospace; font-size: 11px; }
 .verdict {
   margin-left: auto;
   padding: 2px 10px;

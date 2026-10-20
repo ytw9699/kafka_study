@@ -1,5 +1,7 @@
 # TS-3: 런타임 seek 이 컨슈머를 깨뜨린다 — 콜백 두 종류를 구분해야 한다
 
+[← 문서 목록](../README.md) · [README](../../README.md)
+
 | | |
 |---|---|
 | **발생 단계** | 5단계 — [KS-22](../issues/KS-22-replay-api.md) |

@@ -1,5 +1,7 @@
 # KS-21: 리밸런싱 관찰 (실험 B)
 
+[← 문서 목록](../README.md) · [README](../../README.md)
+
 | | |
 |---|---|
 | **타입** | EXPERIMENT |

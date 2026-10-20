@@ -1,3 +1,11 @@
+plugins {
+    // 로컬에 JDK 17 이 없으면 toolchain 이 자동으로 내려받게 한다.
+    //
+    // jvmToolchain(17) 은 "17 을 쓴다"는 선언일 뿐, 없으면 빌드가 실패한다.
+    // 처음 클론한 사람이 JDK 17 을 따로 설치하지 않아도 바로 빌드되게 하기 위함이다.
+    id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
+}
+
 rootProject.name = "kafka-study"
 
 include(

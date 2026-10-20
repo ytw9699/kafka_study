@@ -1,5 +1,13 @@
 # 02. 설계서
 
+[← README](../../README.md) · [문서 목록](../README.md)
+
+> **이 문서 한눈에**
+> - 서비스 3개와 Kafka · PostgreSQL 이 어떻게 연결되는지 **그림으로**
+> - 거래 한 건이 화면에 반영되기까지, 그리고 실험 A·B·C 에서 무슨 일이 일어나는지 **순서도로**
+> - 토픽 · 이벤트 형식 · API · DB 테이블 · 포트 명세
+
+
 ## 1. 전체 아키텍처
 
 ```mermaid
@@ -54,7 +62,7 @@ flowchart TB
 
 | 계층 | 구성 | 역할 |
 |---|---|---|
-| **프론트엔드** | Vue 3 + Pinia + Chart.js | 거래 발생, 원장 흐름과 **파티션 배정의 시각화** |
+| **프론트엔드** | Vue 3 + Pinia | 거래 발생, 원장 흐름과 **파티션 배정의 시각화** |
 | **백엔드** | Kotlin + Spring Boot 3 × 3개 서비스 | Producer 1 + Consumer 2 (+ SSE 게이트웨이) |
 | **인프라** | Kafka(KRaft) + Kafka UI + PostgreSQL | 원장 로그 + 파생 상태 저장소 + 관찰 도구 |
 
@@ -361,7 +369,10 @@ Kafka 로그와 Postgres 데이터 모두 named volume에 둔다.
 
 ### 워커 여러 개 띄우기 (4단계)
 
+**먼저 한 번 빌드한다.** 빌드 없이 여러 개를 동시에 띄우면 Gradle 들이 같은 빌드 폴더를 동시에 컴파일하다 충돌한다([KS-30](../issues/KS-30-readme-build-first.md)).
+
 ```bash
+./gradlew build
 SERVER_PORT=8082 ./gradlew :balance-worker:bootRun
 SERVER_PORT=8092 ./gradlew :balance-worker:bootRun
 SERVER_PORT=8093 ./gradlew :balance-worker:bootRun
@@ -394,14 +405,15 @@ Kafka는 **파티션 내부에서만** 순서를 보장한다. 토픽 전체 순
 
 키를 `RANDOM`으로 바꾸면 이 보장이 즉시 무너지고 잔액이 틀어진다 (실험 A).
 
-### 추가 토픽 (7단계)
+### 추가 토픽 (7단계, [KS-35](../issues/KS-35-failure-handling.md))
 
-| 토픽 | 용도 |
-|---|---|
-| `ledger-events-dlt` | 영구 실패 이벤트 격리 |
+| 토픽 | 만드는 곳 | 용도 |
+|---|---|---|
+| `ledger-events.DLT` | 워커 기동 시 `NewTopic` 빈 (파티션 3) | `BLOCKING` 모드 — 처리하지 못한 거래 · 깨진 메시지 보관. **원래 파티션 번호 그대로** 보낸다 |
+| `ledger-events-retry` · `ledger-events-dlt` | `NON_BLOCKING` 모드일 때 Spring 이 자동 생성 | 재시도 토픽 비교 실험용 |
 
-> **retry topic은 기본으로 쓰지 않는다.** 순서가 깨지기 때문이다 (실험 E).
-> 7단계에서 non-blocking retry가 왜 이 도메인에 맞지 않는지를 직접 확인한 뒤 blocking retry를 택한다.
+> **retry topic은 기본으로 쓰지 않는다.** 순서가 깨지기 때문이다 (실험 E — KS-35 에서 확인).
+> 실패 처리 모드는 `APP_ERROR_MODE` = `DEFAULT` | `NON_BLOCKING` | `BLOCKING` 으로 바꿔 비교한다.
 
 ---
 
@@ -517,11 +529,23 @@ data: { "eventId": "...", "eventType": "POINT_EARNED", "userId": "user-42",
 ```json
 {
   "workers": [
-    { "workerId": "w-8082", "partitions": [0, 2], "lastHeartbeat": "2026-09-05T14:40:01Z" },
-    { "workerId": "w-8092", "partitions": [1],    "lastHeartbeat": "2026-09-05T14:40:00Z" }
-  ]
+    { "workerId": "w-8082", "partitions": [0, 2], "generation": 3,
+      "secondsSinceHeartbeat": 1, "alive": true,  "stopped": false },
+    { "workerId": "w-8092", "partitions": [],     "generation": 2,
+      "secondsSinceHeartbeat": 9, "alive": false, "stopped": true },
+    { "workerId": "w-8093", "partitions": [1],    "generation": 1,
+      "secondsSinceHeartbeat": 47, "alive": false, "stopped": false }
+  ],
+  "aliveCount": 1,
+  "assignedPartitions": [0, 2]
 }
 ```
+
+| 상태 | 판정 | 화면 표시 |
+|---|---|---|
+| 하트비트 8초 이내, 종료 기록 없음 | `alive` | 담당 파티션 표시 (없으면 "놀고 있음") |
+| 정상 종료하며 스스로 기록 | `stopped` | **"정상 종료"** |
+| 하트비트가 8초 넘게 끊김 (`kill -9`) | 둘 다 아님 | **"죽음 (N초)"** |
 
 **`PartitionBoard` 화면의 데이터원.** 리밸런싱이 여기서 눈에 보인다.
 
@@ -529,6 +553,9 @@ data: { "eventId": "...", "eventType": "POINT_EARNED", "userId": "user-42",
 
 잔액 테이블을 **비우고** offset을 처음으로 되감아 전체를 다시 읽는다.
 실무의 "집계 로직 변경 후 전체 재구축"에 해당한다.
+
+> ⚠️ **요청을 받은 워커가 맡은 파티션만** 되감는다. 그런데 잔액은 **전부** 비운다.
+> 워커가 여러 개일 때 부르면 다른 워커 몫의 잔액이 비워진 채 다시 채워지지 않는다. **워커 1개로 실행한다.**
 
 #### `POST /api/balance/replay` — 재생 *(5단계 실험용)*
 
@@ -587,10 +614,22 @@ DO UPDATE SET balance        = user_balance.balance + :delta,
 | `worker_id` | VARCHAR | PK (예: `w-8082`) |
 | `partitions` | VARCHAR | 담당 파티션 (예: `0,2`) |
 | `generation` | INT | 리밸런싱 세대 |
-| `last_heartbeat` | TIMESTAMPTZ | |
+| `last_heartbeat` | TIMESTAMPTZ | 2초마다 갱신. 8초 넘게 끊기면 죽은 것으로 본다 |
+| `stopped` | BOOLEAN | 정상 종료 시 스스로 기록 ([KS-31](../issues/KS-31-worker-status-and-pins.md)) |
 
 `ConsumerRebalanceListener.onPartitionsAssigned`에서 갱신한다.
 **리밸런싱을 화면에 보여주기 위한 테이블이다.**
+
+### balance-worker — `balancedb.quarantined_user` *(7단계에서 추가)*
+
+| 컬럼 | 타입 | 비고 |
+|---|---|---|
+| `user_id` | VARCHAR | PK |
+| `reason` | VARCHAR | 처음 DLT 로 빠진 이유 |
+| `quarantined_at` | TIMESTAMPTZ | |
+
+`BLOCKING` 모드에서 거래가 DLT 로 빠지면 그 사용자를 기록한다. 이후 그 사용자의 거래는 처리하지 않고 DLT 로 보낸다
+— 앞 거래를 건너뛰고 계산하면 잔액이 틀어지기 때문이다. `rebuild` 때 함께 비운다.
 
 ### balance-worker — `balancedb.processed_event` *(5단계에서 추가)*
 

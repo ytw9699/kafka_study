@@ -1,5 +1,7 @@
 # TS-1: KRaft 브로커가 `advertised.listeners ... 0.0.0.0` 로 기동 실패
 
+[← 문서 목록](../README.md) · [README](../../README.md)
+
 | | |
 |---|---|
 | **발생 단계** | 0단계 — [KS-2](../issues/KS-2-infra-docker-compose.md) |

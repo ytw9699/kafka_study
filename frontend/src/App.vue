@@ -8,7 +8,7 @@ import PartitionBoard from './components/PartitionBoard.vue'
 <template>
   <div class="app">
     <header class="top">
-      <h1>Kafka Study — 포인트 지갑 원장</h1>
+      <h1>Kafka Study — 포인트 카드로 배우는 Kafka</h1>
       <p>
         같은 사용자의 거래 순서는 지키면서 여러 사용자를 동시에 처리하고,
         워커가 죽어도 자동으로 이어받으며, 과거 거래까지 다시 읽어야 해서 Kafka를 쓴다.

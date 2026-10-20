@@ -1,6 +1,11 @@
 package com.ytw.kafkastudy.balanceworker.web
 
+import com.ytw.kafkastudy.balanceworker.config.ErrorMode
 import com.ytw.kafkastudy.balanceworker.consume.ReplayCoordinator
+import com.ytw.kafkastudy.balanceworker.domain.QuarantineService
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.http.HttpStatus
+import org.springframework.web.server.ResponseStatusException
 import com.ytw.kafkastudy.balanceworker.domain.BalanceService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -12,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController
 class BalanceController(
     private val balanceService: BalanceService,
     private val replay: ReplayCoordinator,
+    private val quarantine: QuarantineService,
+    @Value("\${app.error-mode}") private val errorMode: ErrorMode,
 ) {
     /**
      * 사용자별 잔액.
@@ -35,6 +42,8 @@ class BalanceController(
             totalRejected = rows.sumOf { it.rejectedEvents },
             idempotent = balanceService.isIdempotent(),
             processedEvents = balanceService.processedCount(),
+            errorMode = errorMode.name,
+            quarantinedUsers = quarantine.all().map { QuarantinedRow(it.userId, it.reason) },
         )
     }
 
@@ -44,9 +53,22 @@ class BalanceController(
      * 실무의 "집계 로직이 바뀌어 전체 재계산이 필요하다"에 해당한다.
      * 과거 계산이 통째로 무효이므로 비우고 다시 쌓는 것이 맞다.
      */
+    /**
+     * 재시도 토픽 모드에서는 재시도 토픽을 읽는 컨슈머도 같은 리스너를 써서
+     * 되감기 콜백이 어느 컨슈머 것인지 섞인다. 이 모드에서는 재생을 막는다.
+     */
+    private fun requireReplayable() {
+        if (errorMode == ErrorMode.NON_BLOCKING) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "NON_BLOCKING 모드에서는 재생을 지원하지 않습니다")
+        }
+    }
+
     @PostMapping("/rebuild")
     fun rebuild(): ReplayResponse {
+        requireReplayable()
         balanceService.clearAll()
+        // 보류도 함께 푼다. 처음부터 다시 읽으면 실패할 거래는 다시 실패해 다시 보류된다.
+        quarantine.clear()
         val partitions = replay.seekToBeginning()
         return ReplayResponse(
             mode = "REBUILD",
@@ -70,6 +92,7 @@ class BalanceController(
      */
     @PostMapping("/replay")
     fun replayAll(): ReplayResponse {
+        requireReplayable()
         val partitions = replay.seekToBeginning()
         return ReplayResponse(
             mode = "REPLAY",
@@ -96,7 +119,13 @@ data class BalancesResponse(
     val idempotent: Boolean,
     /** `processed_event` 에 기록된 건수 */
     val processedEvents: Long,
+    /** 실패 처리 모드. `app.error-mode` */
+    val errorMode: String,
+    /** 거래가 DLT 로 빠져 처리를 보류한 사용자 */
+    val quarantinedUsers: List<QuarantinedRow>,
 )
+
+data class QuarantinedRow(val userId: String, val reason: String)
 
 data class BalanceRow(
     val userId: String,
