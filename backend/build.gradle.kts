@@ -31,6 +31,7 @@ subprojects {
     apply(plugin = "io.spring.dependency-management")
 
     // JDK 17 고정. 로컬에 어떤 JDK 가 깔려 있든 toolchain 이 17 을 찾아 쓴다.
+    // 없으면 settings.gradle.kts 의 foojay 플러그인이 내려받는다.
     //
     // subprojects {} 블록에서는 `kotlin { }` 같은 타입 안전 접근자를 쓸 수 없다.
     // 플러그인이 런타임에 apply 되므로 스크립트 컴파일 시점에는 확장이 존재하지 않기 때문이다.
