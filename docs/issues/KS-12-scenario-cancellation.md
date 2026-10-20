@@ -107,7 +107,7 @@ DB 화면과 통계 화면의 숫자가 다른 것이 이 프로젝트의 결론
 
 ## 작업 내용
 
-- [x] `planning/01-planning.md` — 시나리오 재정의, **5절 "그냥 DB에 넣고 조회하면 되지 않나?" 신설**
+- [x] `planning/01-planning.md` — 시나리오 재정의, **5번 "그냥 DB에 넣고 조회하면 되지 않나?" 신설**
 - [x] `planning/02-architecture.md` — 이벤트 스키마 2종, 취소·시드 API, `daily_revenue` 모델, 멱등 키 정정, 시퀀스/프론트 반영
 - [x] `planning/04-roadmap.md` — 1·2·3·4단계 작업 항목 갱신
 - [x] 티켓 KS-4, KS-6, KS-7, KS-9 갱신
@@ -166,6 +166,6 @@ POST /api/orders/seed
 
 ## 참고
 
-- [01. 기획서 — 5절 "그냥 DB에 넣고 조회하면 되지 않나?"](../planning/01-planning.md)
+- [01. 기획서 — 5번 "그냥 DB에 넣고 조회하면 되지 않나?"](../planning/01-planning.md)
 - [02. 설계서 — 이벤트 스키마 / 데이터 모델](../planning/02-architecture.md)
 - [04. 작업 로드맵](../planning/04-roadmap.md)

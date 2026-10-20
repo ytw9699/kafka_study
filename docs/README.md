@@ -72,7 +72,8 @@
 | [KS-44](issues/KS-44-readme-guide.md) | README 에 "5분 코스"와 코드 지도 추가 | DOCS | DONE |
 | [KS-45](issues/KS-45-neutral-wording.md) | 문서 표현 정리 — 읽는 사람을 특정하지 않는다 | DOCS | DONE |
 | [KS-46](issues/KS-46-study-wording.md) | 문서 표현 정리 — 학습 기록에 맞는 말로 | DOCS | DONE |
-| [KS-47](issues/KS-47-ks43-judgement.md) | KS-43 "판단" 절에 이후 `main` 반영 사실 추가 | DOCS | DONE |
+| [KS-47](issues/KS-47-ks43-judgement.md) | KS-43 "판단" 항목에 이후 `main` 반영 사실 추가 | DOCS | DONE |
+| [KS-48](issues/KS-48-section-wording.md) | 문서의 "N절" 표현을 "N번"으로 | DOCS | DONE |
 
 ### 단계별
 

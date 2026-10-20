@@ -12,7 +12,7 @@
 
 ## 배경
 
-[기획서 6절](../planning/01-planning.md)의 도구 비교표에 이렇게 적었다.
+[기획서 6번](../planning/01-planning.md)의 도구 비교표에 이렇게 적었다.
 
 > ~~"셋을 동시에 만족하는 것은 Kafka뿐이다."~~
 
@@ -34,8 +34,8 @@ Kinesis 도 **샤드(= 파티션) 기반 로그**다.
 
 ## 작업 내용
 
-- [x] `01-planning.md` 6절 — Kinesis 추가, 결론 정정
-- [x] "왜 Kinesis 가 아니라 Kafka인가" 절 신설
+- [x] `01-planning.md` 6번 — Kinesis 추가, 결론 정정
+- [x] "왜 Kinesis 가 아니라 Kafka인가" 항목 신설
 - [x] 표에 넣지 않은 도구(Pulsar 등)와 그 이유 명시
 - [x] `06-progress.md` — 정정 기록 추가
 - [x] `README.md` 표 갱신
@@ -105,5 +105,5 @@ Kinesis 와 기능이 동등하다는 것을 인정하고 나니, **왜 Kafka인
 
 ## 참고
 
-- [01. 기획서 6절](../planning/01-planning.md)
+- [01. 기획서 6번](../planning/01-planning.md)
 - [KS-13 — 첫 번째 과장 정정](KS-13-pivot-ledger.md)
