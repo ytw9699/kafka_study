@@ -11,6 +11,13 @@
 
 > 날짜는 git 커밋 기록 기준입니다.
 
+> **바쁘시면 — 5분 코스**
+> 1. 바로 아래 **"이게 뭐 하는 프로그램인가요?"** 와 **실제 화면** (1분)
+> 2. **[4. 확인한 결과](#4-확인한-결과)** — 무엇을 깨뜨려 보고 무엇을 확인했나 (1분)
+> 3. **[KS-20](docs/issues/KS-20-order-broken-experiment.md)** — 메시지 키 하나로 잔액이 틀어지는 하이라이트 (3분)
+>
+> 코드부터 보고 싶다면 → **[코드 지도](#코드-지도--어디부터-보나)**
+
 ---
 
 ## 이게 뭐 하는 프로그램인가요?
@@ -486,6 +493,27 @@ DLT 에 쌓인 거래는 Kafka UI(<http://localhost:8090>)의 `ledger-events.DLT
 | 트러블슈팅 | [TS-1 advertised.listeners](docs/troubleshooting/TS-1-advertised-listeners.md) · [TS-2 poison pill](docs/troubleshooting/TS-2-poison-pill.md) · [TS-3 seek 콜백](docs/troubleshooting/TS-3-seek-callback.md) |
 
 </details>
+
+---
+
+## 코드 지도 — 어디부터 보나
+
+핵심 동작이 어느 파일에 있는지입니다. 각 파일 맨 위 주석에 **왜 그렇게 만들었는지**를 적어 두었습니다.
+
+| 보고 싶은 것 | 파일 | 볼 곳 |
+|---|---|---|
+| 메시지 형식 — 키는 `userId`, 잔액은 담지 않는다 | [`LedgerEvent.kt`](backend/common/src/main/kotlin/com/ytw/kafkastudy/common/LedgerEvent.kt) | 맨 위 주석 "설계 전제" |
+| 발행 — 키 고르기(`USER_ID` / `RANDOM`) | [`LedgerEventPublisher.kt`](backend/ledger-api/src/main/kotlin/com/ytw/kafkastudy/ledgerapi/publish/LedgerEventPublisher.kt) · [`PartitionKeyMode.kt`](backend/ledger-api/src/main/kotlin/com/ytw/kafkastudy/ledgerapi/config/PartitionKeyMode.kt) | `publish()` · `acks=all` 은 [`application.yml`](backend/ledger-api/src/main/resources/application.yml) |
+| 소비 — 한 파티션은 한 워커만, 그래서 락이 없다 | [`LedgerConsumer.kt`](backend/balance-worker/src/main/kotlin/com/ytw/kafkastudy/balanceworker/consume/LedgerConsumer.kt) | 클래스 주석, `consume()` |
+| 잔액 계산 — 순서가 결과를 바꾸는 지점, 멱등 처리 | [`BalanceService.kt`](backend/balance-worker/src/main/kotlin/com/ytw/kafkastudy/balanceworker/domain/BalanceService.kt) | `apply()` — 잔액 부족 거절, `eventId` 처리 기록 |
+| 재생 — offset 되감기, 스레드를 넘지 않는 seek | [`ReplayController.kt`](backend/balance-worker/src/main/kotlin/com/ytw/kafkastudy/balanceworker/consume/ReplayController.kt) (`ReplayCoordinator`) · [`BalanceController.kt`](backend/balance-worker/src/main/kotlin/com/ytw/kafkastudy/balanceworker/web/BalanceController.kt) | `seekToBeginning()`, `rebuild` · `replay` |
+| 리밸런싱 관찰 — 파티션 배정 · 하트비트 · 정상 종료 | [`AssignmentTracker.kt`](backend/balance-worker/src/main/kotlin/com/ytw/kafkastudy/balanceworker/consume/AssignmentTracker.kt) | `onPartitionsAssigned` · `onPartitionsRevokedBeforeCommit` · `markStopped` |
+| 실패 처리 — 세 가지 방식, DLT, 사용자 보류 | [`ErrorHandlingConfig.kt`](backend/balance-worker/src/main/kotlin/com/ytw/kafkastudy/balanceworker/config/ErrorHandlingConfig.kt) · [`QuarantineService.kt`](backend/balance-worker/src/main/kotlin/com/ytw/kafkastudy/balanceworker/domain/QuarantineService.kt) | `ErrorMode` 주석의 비교표 |
+| 실험용 실패 장치 | [`FaultInjector.kt`](backend/balance-worker/src/main/kotlin/com/ytw/kafkastudy/balanceworker/consume/FaultInjector.kt) | 사유 칸 표시 → 예외 |
+| 실시간 중계(SSE) | [`LedgerStreamGateway.kt`](backend/ledger-api/src/main/kotlin/com/ytw/kafkastudy/ledgerapi/stream/LedgerStreamGateway.kt) | `relay()` — `gateway-group` 으로 받아 연결된 화면 전부에 전달 |
+| 화면의 기대 잔액 — 비교 기준 | [`ledger.ts`](frontend/src/stores/ledger.ts) | `expectedBalances`, `missedPartitions` |
+
+테스트: [`BalanceServiceTest.kt`](backend/balance-worker/src/test/kotlin/com/ytw/kafkastudy/balanceworker/BalanceServiceTest.kt) (순서 · 멱등) · [`FaultInjectorTest.kt`](backend/balance-worker/src/test/kotlin/com/ytw/kafkastudy/balanceworker/FaultInjectorTest.kt) (실패 장치) · [`LedgerEventSerdeTest.kt`](backend/common/src/test/kotlin/com/ytw/kafkastudy/common/LedgerEventSerdeTest.kt) (직렬화)
 
 ---
 
