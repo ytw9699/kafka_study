@@ -77,6 +77,7 @@
 | [KS-49](issues/KS-49-intro-wording.md) | README 첫 소개 문구 정리 | DOCS | DONE |
 | [KS-50](issues/KS-50-plain-wording.md) | 문서 · 주석의 딱딱한 표현을 실제로 쓰는 말로 | DOCS | DONE |
 | [KS-51](issues/KS-51-basic-concepts-heading.md) | README 3번 제목을 "기초 개념"으로 | DOCS | DONE |
+| [KS-52](issues/KS-52-drop-surprise-label.md) | README 4번의 "가장 의외였던 것" 꼬리표 제거 | DOCS | DONE |
 
 ### 단계별
 
