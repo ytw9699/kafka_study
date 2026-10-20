@@ -10,6 +10,7 @@
 |---|---|
 | 3분 | [README](../README.md) — 무엇을 왜 만들었고 어떻게 돌려 보는지 |
 | 5분 | [KS-20](issues/KS-20-order-broken-experiment.md) — 키 하나 바꿨더니 잔액이 틀어지는 하이라이트 |
+| 5분 | [KS-35](issues/KS-35-failure-handling.md) — 권장 패턴(재시도 토픽)이 잔액을 깨뜨리는 두 번째 하이라이트 |
 | 10분 | [06. 진행 기록](planning/06-progress.md) — 무엇을 확인했고 무엇이 틀렸다가 고쳐졌나 |
 | 10분 | [07. 메시지 큐](planning/07-message-queue.md) — 큐를 쓰는 이유와 대가 |
 
@@ -30,9 +31,9 @@
 | [01. 기획서](planning/01-planning.md) | 왜 Kafka인가(정직한 주장 강도), 도메인, 요구사항 6개, 도구 비교, 실험 A~F |
 | [02. 설계서](planning/02-architecture.md) | 전체 아키텍처, 흐름 시퀀스, 프론트/인프라 구조, 토픽·스키마·API |
 | [03. 기술 스택 결정서](planning/03-tech-stack.md) | 스택 선택 근거와 탈락시킨 대안 |
-| [04. 작업 로드맵](planning/04-roadmap.md) | 0~7단계 세부 작업 분해와 확인 방법 |
+| [04. 작업 로드맵](planning/04-roadmap.md) | 0~7단계 세부 작업 분해와 확인 방법 (계획) |
 | [05. DB로 직접 만들면](planning/05-why-not-diy.md) | DIY 대응표, split-brain, fencing token |
-| **[06. 진행 기록](planning/06-progress.md)** | **1차 완결 회고 — 복기용. 여기부터 읽어도 된다** |
+| **[06. 진행 기록](planning/06-progress.md)** | **1차 완결 회고 + 이후 재검증 · 7단계 결과 — 복기용. 여기부터 읽어도 된다** |
 | [07. 메시지 큐](planning/07-message-queue.md) | 출발점(Redis Pub/Sub), 큐를 쓰는 이유와 대가, 전달 보장, 재시도·DLQ, 분산 트랜잭션 |
 
 ---
@@ -60,8 +61,9 @@
 | [KS-33](issues/KS-33-readme-architecture-diagram.md) | README 맨 앞에 한눈에 보는 아키텍처 그림 추가 | DOCS | DONE |
 | [KS-34](issues/KS-34-plain-words-and-doc-audit.md) | README 를 쉬운 말로 다시 쓰기, 전체 문서 점검 | DOCS | DONE |
 | [KS-36](issues/KS-36-claude-md-failure-handling.md) | 작업 규칙(CLAUDE.md)에 7단계 완료 반영 | DOCS | DONE |
+| [KS-37](issues/KS-37-doc-sync-after-failure-handling.md) | 7단계 결과를 전체 문서에 반영, 실험 이름 통일, README 흐름 정리 | DOCS | DONE |
 
-### 단계별 (0~5단계 · 1차 완결)
+### 단계별
 
 | 티켓 | 제목 | 타입 | 단계 | 상태 |
 |---|---|---|---|---|
@@ -79,11 +81,12 @@
 | [KS-21](issues/KS-21-rebalance-experiment.md) | 리밸런싱 관찰 (실험 B) | EXPERIMENT | 4단계 | DONE |
 | [KS-22](issues/KS-22-replay-api.md) | 재생 API — rebuild / replay | FEAT | 5단계 | DONE |
 | [KS-23](issues/KS-23-idempotency-experiment.md) | ★ 재생하면 두 배가 된다 → 멱등성 | EXPERIMENT | 5단계 | DONE |
-| [KS-35](issues/KS-35-failure-handling.md) | ★ 실패 처리 — 재시도 · DLT · 사용자 보류 · 깨진 메시지 격리 | EXPERIMENT | 7단계 | DONE |
+| [KS-35](issues/KS-35-failure-handling.md) | ★ 실패 처리 — 재시도 · DLT · 사용자 보류 · 깨진 메시지 격리 (실험 E · F) | EXPERIMENT | 7단계 (2차) | DONE |
 
 **1차 목표(0~5단계) 완결.** 태그 `step-0` ~ `step-5`.
+**7단계(2차)도 끝났다.** 아직 `dev` 에만 있어 태그는 없다.
 
-남은 **6~7단계(2차)** 는 [로드맵](planning/04-roadmap.md)에 분해되어 있으며, 착수 시점에 티켓으로 발급한다.
+남은 **6단계(2차)** 는 [로드맵](planning/04-roadmap.md)에 분해되어 있으며, 착수 시점에 티켓으로 발급한다.
 전체 회고는 [06. 진행 기록](planning/06-progress.md) 참조.
 
 ### 대기
@@ -108,7 +111,7 @@
 | 문서 | 내용 |
 |---|---|
 | [TS-1](troubleshooting/TS-1-advertised-listeners.md) | KRaft 브로커가 `advertised.listeners ... 0.0.0.0` 로 기동 실패 |
-| [TS-2](troubleshooting/TS-2-poison-pill.md) | 역직렬화 불가 메시지 하나가 컨슈머 전체를 멈춘다 (poison pill) |
+| [TS-2](troubleshooting/TS-2-poison-pill.md) | 역직렬화 불가 메시지 하나가 컨슈머 전체를 멈춘다 (poison pill) — 7단계([KS-35](issues/KS-35-failure-handling.md))에서 해결 |
 | [TS-3](troubleshooting/TS-3-seek-callback.md) | 런타임 seek 이 컨슈머를 깨뜨린다 — 콜백 두 종류 구분 |
 
 > Kafka는 설정 하나 때문에 안 되는 경우가 많다. 한참 붙잡은 문제는 반드시 `troubleshooting/`에 남긴다.

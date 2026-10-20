@@ -24,8 +24,8 @@ npm install && npm run dev
 
 ## 핵심 장치 — 기대 잔액
 
-`stores/balance.ts` 는 SSE(`composables/useSse.ts`)로 받은 거래를 **발생 시각 순으로 정렬해 직접 계산**합니다.
-워커가 Kafka 를 읽어 계산한 잔액과 비교해, 둘이 다르면 순서가 깨졌다는 뜻입니다.
+`stores/ledger.ts` 는 SSE(`composables/useSse.ts`)로 받은 거래를 **발생 시각 순으로 정렬해 직접 계산**합니다.
+`stores/balance.ts` 가 워커에게 물어 온 잔액과 비교해, 둘이 다르면 순서가 깨졌거나 거래가 빠졌다는 뜻입니다.
 
 도착 순서가 아니라 발생 시각 순으로 계산하는 이유: 도착 순서로 계산하면 순서가 깨질 때 **기대 잔액도 같이 틀려져** 비교가 의미 없어지기 때문입니다.
 

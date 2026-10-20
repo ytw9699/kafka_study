@@ -5,6 +5,7 @@
 | | |
 |---|---|
 | **발생 단계** | 3단계 — [KS-16](../issues/KS-16-balance-worker.md) |
+| **근본 해결** | 7단계 — [KS-35](../issues/KS-35-failure-handling.md) (`ErrorHandlingDeserializer` 적용) |
 
 ## 문제
 
@@ -64,7 +65,7 @@ docker exec kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:90
   --create --topic ledger-events --partitions 3 --replication-factor 1
 ```
 
-## 제대로 된 해결 (7단계에서)
+## 제대로 된 해결 — 7단계에서 적용
 
 토픽 재생성은 **학습 환경이라 가능한 선택**이다. 운영에서는 불가능하다.
 
@@ -81,8 +82,16 @@ spring:
         spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
 ```
 
-**[7단계](../planning/04-roadmap.md)에서 다룬다.** 이 프로젝트는 "문제를 먼저 겪고 해결한다"는 순서를 따르므로,
-지금 미리 넣지 않고 이 기록만 남긴다.
+3단계 당시에는 "문제를 먼저 겪고 해결한다"는 순서에 따라 미리 넣지 않고 기록만 남겼다.
+
+**7단계([KS-35](../issues/KS-35-failure-handling.md))에서 적용했다.** 같은 원시 텍스트를 토픽에 직접 넣어 확인한 결과:
+
+```
+바로 뒤 정상 거래 처리: 1초         ← 워커가 멈추지 않음
+ledger-events.DLT 에 원본 그대로 보관  (BLOCKING 모드)
+```
+
+`DEFAULT` 모드에서는 DLT 없이 로그만 남기고 건너뛴다. 어느 쪽이든 **무한히 멈추지는 않는다.**
 
 ## 배운 것
 
@@ -106,5 +115,7 @@ CLI 실습과 애플리케이션이 **같은 토픽**을 공유한 것이 화근
 "한 메시지가 파티션 전체를 막는다"는 [실험 F](../planning/01-planning.md)에서 다루려던 현상인데,
 의도치 않게 먼저 겪었다.
 
-덕분에 **DLT 가 왜 필요한지**가 이미 몸에 남았다.
-7단계에서는 "왜 필요한지"가 아니라 "어떻게 구성하는지"에 집중할 수 있다.
+덕분에 **DLT 가 왜 필요한지**가 이미 몸에 남았고, 7단계에서는 "어떻게 구성하는지"에 집중할 수 있었다.
+
+7단계에서 하나 더 알게 된 것 — 이때 무한히 멈춘 것은 **역직렬화** 실패라서였다.
+리스너 안에서 던진 예외는 Spring Kafka 기본값이 **10번 다시 하고 조용히 건너뛴다.** 멈추지 않는 대신 아무도 모르게 사라진다.
