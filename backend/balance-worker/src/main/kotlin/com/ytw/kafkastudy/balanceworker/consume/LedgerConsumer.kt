@@ -2,9 +2,11 @@ package com.ytw.kafkastudy.balanceworker.consume
 
 import com.ytw.kafkastudy.balanceworker.domain.ApplyResult
 import com.ytw.kafkastudy.balanceworker.domain.BalanceService
+import com.ytw.kafkastudy.balanceworker.domain.QuarantineService
 import com.ytw.kafkastudy.common.LedgerEvent
 import org.slf4j.LoggerFactory
 import org.apache.kafka.common.TopicPartition
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.kafka.listener.ConsumerSeekAware
 import org.springframework.kafka.support.KafkaHeaders
@@ -35,6 +37,9 @@ class LedgerConsumer(
     private val balanceService: BalanceService,
     private val throttle: ReplayThrottle,
     private val replay: ReplayCoordinator,
+    private val faults: FaultInjector,
+    private val quarantine: QuarantineService,
+    @Value("\${app.topic.ledger-events}") private val topic: String,
 ) : ConsumerSeekAware {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -54,7 +59,9 @@ class LedgerConsumer(
         // 여기서 seekToBeginning 을 부르지 않는다.
         // 기동 시 자동 재생은 실무 패턴이 아니다 — 커밋된 offset 에서 이어 읽는 것이 정상이다.
         // cb 는 넘기지 않는다 — 즉시 seek 방식이라 HTTP 스레드에서 쓰면 컨슈머가 깨진다.
-        replay.onAssigned(assignments.keys)
+        // 재시도 토픽 모드에서는 재시도 토픽을 읽는 컨슈머도 이 리스너를 쓴다. 원래 토픽만 본다.
+        val main = assignments.keys.filter { it.topic() == topic }.toSet()
+        if (main.isNotEmpty()) replay.onAssigned(main)
     }
 
     @KafkaListener(
@@ -67,6 +74,14 @@ class LedgerConsumer(
         @Header(KafkaHeaders.OFFSET) offset: Long,
     ) {
         throttle.pause()
+
+        // 7단계(KS-35) — 실패 처리.
+        // 보류된 사용자의 거래는 처리하지 않는다. 앞 거래가 빠진 채 계산하면 잔액이 틀어진다.
+        if (quarantine.isQuarantined(event.userId)) {
+            throw UserQuarantinedException("보류된 사용자 userId=${event.userId} eventId=${event.eventId}")
+        }
+        // 사유에 실험 표시가 있으면 여기서 예외를 던진다. 무엇을 할지는 에러 처리 모드가 정한다.
+        faults.check(event)
 
         when (val result = balanceService.apply(event)) {
             is ApplyResult.Applied -> log.info(

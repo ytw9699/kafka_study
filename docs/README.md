@@ -78,6 +78,7 @@
 | [KS-21](issues/KS-21-rebalance-experiment.md) | 리밸런싱 관찰 (실험 B) | EXPERIMENT | 4단계 | DONE |
 | [KS-22](issues/KS-22-replay-api.md) | 재생 API — rebuild / replay | FEAT | 5단계 | DONE |
 | [KS-23](issues/KS-23-idempotency-experiment.md) | ★ 재생하면 두 배가 된다 → 멱등성 | EXPERIMENT | 5단계 | DONE |
+| [KS-35](issues/KS-35-failure-handling.md) | ★ 실패 처리 — 재시도 · DLT · 사용자 보류 · 깨진 메시지 격리 | EXPERIMENT | 7단계 | DONE |
 
 **1차 목표(0~5단계) 완결.** 태그 `step-0` ~ `step-5`.
 
@@ -88,7 +89,6 @@
 
 | 티켓 | 제목 | 타입 | 상태 |
 |---|---|---|---|
-| [KS-35](issues/KS-35-failure-handling.md) | 실패 처리 — 재시도 · DLT · 깨진 메시지 격리 (7단계) | EXPERIMENT | TODO |
 | [KS-29](issues/KS-29-throughput-experiment.md) | 처리량 실험 — 워커 · 파티션 · 배치, 느린 처리가 일으키는 리밸런싱 | EXPERIMENT | TODO |
 
 ### 취소됨

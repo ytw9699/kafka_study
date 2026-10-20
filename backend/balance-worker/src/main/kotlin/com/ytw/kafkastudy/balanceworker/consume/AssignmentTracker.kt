@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional
 class AssignmentTracker(
     private val repository: WorkerAssignmentRepository,
     @Value("\${server.port}") private val port: String,
+    @Value("\${app.topic.ledger-events}") private val topic: String,
 ) : ConsumerAwareRebalanceListener {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -48,7 +49,10 @@ class AssignmentTracker(
         consumer: Consumer<*, *>,
         partitions: Collection<TopicPartition>,
     ) {
-        current = partitions.map { it.partition() }.toSet()
+        // 재시도 토픽 모드에서는 재시도 토픽 컨슈머도 이 콜백을 부른다. 원래 토픽의 배정만 기록한다.
+        val main = partitions.filter { it.topic() == topic }
+        if (main.isEmpty()) return
+        current = main.map { it.partition() }.toSet()
         log.info("파티션 배정됨 worker={} partitions={}", workerId, current.sorted())
         save(bumpGeneration = true)
     }
@@ -59,6 +63,7 @@ class AssignmentTracker(
     ) {
         // 정상 종료나 리밸런싱 직전에 불린다.
         // kill -9 로 죽이면 이 콜백은 불리지 않는다 — 그래서 하트비트가 필요하다.
+        if (partitions.none { it.topic() == topic }) return
         log.info("파티션 반납 worker={} partitions={}", workerId, partitions.map { it.partition() }.sorted())
         current = emptySet()
         save(bumpGeneration = false)
