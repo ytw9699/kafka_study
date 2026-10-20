@@ -57,10 +57,9 @@ const mismatches = computed(() => rows.value.filter((r) => r.diff !== null && r.
 /**
  * 기대 잔액은 **SSE 로 받은 이벤트만** 가지고 계산한다.
  * 화면을 켜기 전에 발행된 거래는 프론트가 모르므로 비교가 성립하지 않는다.
+ * 판단 기준은 [ledger.missedPartitions] 참조.
  */
-const partialData = computed(() =>
-  balance.totalApplied + balance.totalRejected > ledger.events.length,
-)
+const partialData = computed(() => ledger.missedPartitions.length > 0)
 
 function fmt(n: number | null) {
   return n === null ? '—' : n.toLocaleString('ko-KR')
@@ -156,8 +155,10 @@ async function runReplay(mode: 'rebuild' | 'replay') {
     <p v-if="lastAction" class="action">{{ lastAction }}</p>
 
     <p v-if="partialData" class="note warn">
-      ⚠️ 화면을 켜기 <strong>전</strong>에 발행된 거래가 있어 기대 잔액이 부족하게 계산됩니다.
-      정확히 비교하려면 워커의 잔액을 재구축하거나, 이 화면을 켠 뒤 발생한 거래만으로 확인하세요.
+      ⚠️ 화면을 켜기 <strong>전</strong>에 기록된 거래가 있습니다
+      ({{ ledger.missedPartitions.map((p) => `p${p}`).join(', ') }}).
+      화면은 그 거래를 받지 못해, 그 파티션 사용자의 기대 잔액이 부족하게 계산됩니다.
+      처음부터 정확히 비교하려면 초기화한 뒤 <strong>화면을 먼저 켜고</strong> 거래를 발생시키세요.
     </p>
     <p class="note">
       <strong>기대 잔액</strong>은 프론트가 SSE 로 받은 이벤트를
