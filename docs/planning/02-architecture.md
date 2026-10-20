@@ -75,7 +75,7 @@ flowchart TB
 | 컨슈머 그룹 | 소속 | 인스턴스 | `auto-offset-reset` | 역할 |
 |---|---|---|---|---|
 | `gateway-group` | ledger-api | **1개** | `latest` | 전체 파티션 구독 → SSE 중계 |
-| `balance-group` | balance-worker | **N개 ★** | `earliest` | 잔액 계산. 순서·병렬·리밸런싱의 무대 |
+| `balance-group` | balance-worker | **N개 ★** | `earliest` | 잔액 계산. 순서·병렬·리밸런싱을 실험하는 곳 |
 | `fraud-group` | fraud-service | 1개 | `earliest` | 나중에 합류. 과거 전체 재생 |
 
 > **왜 SSE 게이트웨이를 `ledger-api`에 두는가**
@@ -101,7 +101,7 @@ flowchart TB
 
 ### balance-worker (:8082…) ★ — 잔액 계산
 
-**이 프로젝트의 주인공.**
+**이 프로젝트의 중심 서비스.**
 
 - `ledger-events`를 `balance-group`으로 구독해 잔액을 계산하고 `balancedb`에 저장
 - **인스턴스를 여러 개 띄운다.** 파티션이 나뉘어 배정된다
@@ -118,7 +118,7 @@ flowchart TB
 ### fraud-service (:8083) — 나중에 합류하는 소비자
 
 - 6단계에서 **처음** 기동한다. `fraud-group` + `earliest` → 과거 전체를 읽는다
-- 사용자별 거래 패턴을 계산해 이상 징후를 표시 (단순 규칙: 짧은 시간 내 대량 사용 등)
+- 사용자별 거래 패턴을 계산해 이상거래를 표시 (단순 규칙: 짧은 시간 내 대량 사용 등)
 - **잔액 워커에 아무 영향을 주지 않는다** — 컨슈머 그룹이 다르기 때문
 
 ---
@@ -254,7 +254,7 @@ sequenceDiagram
 ```
 
 > **`processed_event` 테이블은 replay 의 😱를 겪은 뒤에 만든다** (5단계 안에서 순서: replay → rebuild → 멱등).
-> 먼저 겪어야 멱등성의 필요가 몸에 남는다. 멱등 처리는 지금도 기본값이 꺼져 있다 (`APP_IDEMPOTENT`).
+> 먼저 겪어야 멱등성이 왜 필요한지 확실히 알게 된다. 멱등 처리는 지금도 기본값이 꺼져 있다 (`APP_IDEMPOTENT`).
 
 ### 3-5. 처리에 실패하면 *(실험 E · F, 7단계)*
 
@@ -335,7 +335,7 @@ flowchart LR
 | `PartitionBoard` ★ | 워커별 담당 파티션, 마지막 하트비트 | **리밸런싱이 실시간으로 보이는 화면** |
 
 > `BalancePanel`은 프론트가 이벤트를 직접 합산한 **기대 잔액**을 함께 표시한다.
-> 실험 A에서 워커가 계산한 잔액과 기대 잔액이 **어긋나는 것**이 이 프로젝트의 결정적 장면이다.
+> 실험 A에서 워커가 계산한 잔액과 기대 잔액이 **어긋나는 것**이 이 프로젝트의 가장 중요한 장면이다.
 
 ### 디렉토리 구조
 
@@ -452,7 +452,7 @@ SERVER_PORT=8093 ./gradlew :balance-worker:bootRun
 | retention | 기본 7일 | 학습 중 재생이 가능해야 하므로 충분 |
 | 값 형식 | JSON | 기초 단계. Avro/Schema Registry는 범위 밖 |
 
-### 파티션 키가 이 프로젝트의 심장인 이유
+### 파티션 키가 이 프로젝트에서 가장 중요한 이유
 
 Kafka는 **파티션 내부에서만** 순서를 보장한다. 토픽 전체 순서는 보장하지 않는다.
 
@@ -655,7 +655,7 @@ data: { "eventId": "...", "eventType": "POINT_EARNED", "userId": "user-42",
 
 ### fraud-service (:8083) *(6단계)*
 
-#### `GET /api/fraud/alerts` — 이상 징후 목록
+#### `GET /api/fraud/alerts` — 이상거래 목록
 #### `GET /api/fraud/stream` — 실시간 알림 (SSE)
 
 ---

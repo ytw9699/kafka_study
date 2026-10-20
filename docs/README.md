@@ -28,7 +28,7 @@
 
 | 문서 | 내용 |
 |---|---|
-| [01. 기획서](planning/01-planning.md) | 왜 Kafka인가(정직한 주장 강도), 도메인, 요구사항 6개, 도구 비교, 실험 A~F |
+| [01. 기획서](planning/01-planning.md) | 왜 Kafka인가(과장 없는 주장 강도), 도메인, 요구사항 6개, 도구 비교, 실험 A~F |
 | [02. 설계서](planning/02-architecture.md) | 전체 아키텍처, 흐름 시퀀스, 프론트/인프라 구조, 토픽·스키마·API |
 | [03. 기술 스택 결정서](planning/03-tech-stack.md) | 스택 선택 근거와 탈락시킨 대안 |
 | [04. 작업 로드맵](planning/04-roadmap.md) | 0~7단계 세부 작업 분해와 확인 방법 (계획) |
@@ -75,6 +75,7 @@
 | [KS-47](issues/KS-47-ks43-judgement.md) | KS-43 "판단" 항목에 이후 `main` 반영 사실 추가 | DOCS | DONE |
 | [KS-48](issues/KS-48-section-wording.md) | 문서의 "N절" 표현을 "N번"으로 | DOCS | DONE |
 | [KS-49](issues/KS-49-intro-wording.md) | README 첫 소개 문구 정리 | DOCS | DONE |
+| [KS-50](issues/KS-50-plain-wording.md) | 문서 · 주석의 딱딱한 표현을 실제로 쓰는 말로 | DOCS | DONE |
 
 ### 단계별
 

@@ -75,7 +75,7 @@ class ReplayCoordinator {
      * ⚠️ **이 워커가 담당한 파티션만** 되감긴다.
      * 워커가 여러 개면 각자에게 호출해야 한다.
      * 5단계 실험은 워커 1개로 진행하는 이유가 이것이다 —
-     * 재생의 본질(offset seek)을 보는 것이 목적이고 분산 조율은 다른 주제다.
+     * 재생의 핵심(offset seek)을 보는 것이 목적이고 분산 조율은 다른 주제다.
      */
     fun seekToBeginning(): Set<TopicPartition> {
         val cb = callback.get() ?: error("아직 파티션을 배정받지 못했습니다")
