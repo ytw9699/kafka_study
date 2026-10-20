@@ -76,6 +76,7 @@
 | [KS-48](issues/KS-48-section-wording.md) | 문서의 "N절" 표현을 "N번"으로 | DOCS | DONE |
 | [KS-49](issues/KS-49-intro-wording.md) | README 첫 소개 문구 정리 | DOCS | DONE |
 | [KS-50](issues/KS-50-plain-wording.md) | 문서 · 주석의 딱딱한 표현을 실제로 쓰는 말로 | DOCS | DONE |
+| [KS-51](issues/KS-51-basic-concepts-heading.md) | README 3번 제목을 "기초 개념"으로 | DOCS | DONE |
 
 ### 단계별
 
