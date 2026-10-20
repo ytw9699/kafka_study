@@ -8,7 +8,7 @@
 | **상태** | DONE |
 | **단계** | 7단계 (2차) |
 | **브랜치** | `experiment/KS-35-failure-handling` |
-| **PR** | - |
+| **PR** | [#46](https://github.com/ytw9699/kafka_study/pull/46) |
 
 ## 배경
 
