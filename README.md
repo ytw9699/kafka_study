@@ -421,8 +421,8 @@ Kafka와 DB 데이터가 모두 지워집니다. 백엔드를 끄고 실행한 �
 | **4 ★** | **순서 깨짐 → 파티션 키 → 리밸런싱** | ✅ `step-4` |
 | **5 ★** | **기록을 처음부터 다시 계산하기 & 중복 방지** | ✅ `step-5` — 1차 완결 |
 | 6 | `fraud-service` 나중에 합류 | 2차 |
-| 7 | 실패 처리 — blocking retry, DLT | 2차 |
-| - | 처리량 실험 — 워커 · 파티션 · 배치가 속도를 어떻게 바꾸는가 | 대기 → [KS-29](docs/issues/KS-29-throughput-experiment.md) |
+| 7 | 실패 처리 — 재시도, DLT, 깨진 메시지 격리 | 대기 → [KS-35](docs/issues/KS-35-failure-handling.md) |
+| - | 처리량 실험 — 워커 · 파티션 · 배치, 느린 처리가 일으키는 리밸런싱 | 대기 → [KS-29](docs/issues/KS-29-throughput-experiment.md) |
 
 단계별 작업 분해 → [04. 작업 로드맵](docs/planning/04-roadmap.md) · 1차 이후 고친 것 → [06. 진행 기록 9절](docs/planning/06-progress.md#9-1차-완결-이후--다시-검증하며-고친-것)
 

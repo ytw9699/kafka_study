@@ -88,7 +88,8 @@
 
 | 티켓 | 제목 | 타입 | 상태 |
 |---|---|---|---|
-| [KS-29](issues/KS-29-throughput-experiment.md) | 처리량 실험 — 워커 · 파티션 · 배치가 처리 속도를 어떻게 바꾸는가 | EXPERIMENT | TODO |
+| [KS-35](issues/KS-35-failure-handling.md) | 실패 처리 — 재시도 · DLT · 깨진 메시지 격리 (7단계) | EXPERIMENT | TODO |
+| [KS-29](issues/KS-29-throughput-experiment.md) | 처리량 실험 — 워커 · 파티션 · 배치, 느린 처리가 일으키는 리밸런싱 | EXPERIMENT | TODO |
 
 ### 취소됨
 
