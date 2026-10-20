@@ -41,6 +41,7 @@
 | [KS-25](issues/KS-25-tool-comparison-fix.md) | 도구 비교표 정정 — "Kafka뿐"은 과장이었다 | DOCS | DONE |
 | [KS-27](issues/KS-27-message-queue-concepts.md) | 메시지 큐 개념 문서 신설 및 문구 정리 | DOCS | DONE |
 | [KS-28](issues/KS-28-readme-onboarding.md) | README 재작성 — 처음 보는 사람이 따라올 수 있게 | DOCS | DONE |
+| [KS-30](issues/KS-30-readme-build-first.md) | README 실행 절차에 "먼저 빌드" 단계 추가 | DOCS | DONE |
 
 ### 단계별 (0~5단계 · 1차 완결)
 

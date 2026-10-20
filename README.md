@@ -129,7 +129,18 @@ docker exec kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:90
 > `docker/cli-lab.sh`는 CLI 실습용 스크립트입니다. 이 스크립트가 넣는 JSON은 앱이 읽지 못해서 워커가 멈춥니다
 > ([TS-2 poison pill](docs/troubleshooting/TS-2-poison-pill.md)). 앱을 돌릴 토픽에는 실행하지 마세요.
 
-### ③ 백엔드 띄우기 — 터미널 4개
+### ③ 백엔드 빌드 — 한 번만
+
+```bash
+cd backend && ./gradlew build
+```
+
+처음이면 의존성과 (없을 경우) JDK 17을 내려받느라 몇 분 걸립니다. `BUILD SUCCESSFUL`이 나오면 다음으로 넘어가세요.
+
+> **이 단계를 건너뛰지 마세요.** 빌드 없이 아래 터미널 4개를 한꺼번에 띄우면
+> Gradle 4개가 같은 빌드 폴더를 동시에 컴파일하다 서로 충돌해 일부가 `BUILD FAILED`로 죽습니다.
+
+### ④ 백엔드 띄우기 — 터미널 4개
 
 ```bash
 cd backend && ./gradlew :ledger-api:bootRun
@@ -150,7 +161,7 @@ cd backend && SERVER_PORT=8093 ./gradlew :balance-worker:bootRun
 워커 3개가 같은 컨슈머 그룹으로 묶여 **파티션을 하나씩 나눠 맡습니다.**
 화면은 `:8082` 워커에서 잔액을 조회하므로 `:8082`는 꼭 띄워 주세요.
 
-### ④ 화면 띄우기
+### ⑤ 화면 띄우기
 
 ```bash
 cd frontend && npm install && npm run dev
