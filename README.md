@@ -342,7 +342,7 @@ Kafka와 DB 데이터가 모두 지워집니다. 백엔드를 끄고 실행한 �
 | 1 | 거래를 몇 건 발생 | 잔액 확인 |
 | 2 | **[replay — 잔액 유지한 채 재생]** | 잔액이 **정확히 2배** 😱 — 같은 거래를 한 번 더 적용했다 |
 | 3 | **[rebuild — 잔액 비우고 재생]** | 원래 잔액으로 **정확히 복원** — 로그가 원본이라 언제든 다시 계산할 수 있다 |
-| 4 | 워커를 `APP_IDEMPOTENT=true SERVER_PORT=8082 ./gradlew :balance-worker:bootRun` 으로 재기동한 뒤 rebuild → replay | replay 해도 **잔액 불변** — 이미 처리한 `eventId`는 건너뛴다 (멱등) |
+| 4 | 워커를 `cd backend && APP_IDEMPOTENT=true SERVER_PORT=8082 ./gradlew :balance-worker:bootRun` 으로 재기동한 뒤 rebuild → replay | replay 해도 **잔액 불변** — 이미 처리한 `eventId`는 건너뛴다 (멱등) |
 
 멱등 처리는 기본값이 **꺼져 있습니다.** 두 배가 되는 문제를 먼저 겪어 보라는 의도입니다. → [KS-23](docs/issues/KS-23-idempotency-experiment.md)
 
