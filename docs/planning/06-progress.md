@@ -24,7 +24,7 @@
 | **4 ★** | **순서 · 병렬 · 리밸런싱** | KS-19 ~ KS-21 | `step-4` |
 | **5 ★** | **원장 재구축 & 멱등성** | KS-22, KS-23 | `step-5` |
 | 6 (2차) | `fraud-service` 합류 | 미착수 | - |
-| 7 (2차) | 실패 처리 · DLT | [KS-35](../issues/KS-35-failure-handling.md) | `dev` 반영 (태그 전) |
+| 7 (2차) | 실패 처리 · DLT | [KS-35](../issues/KS-35-failure-handling.md) | `step-7` |
 
 `main` 브랜치의 커밋 히스토리가 그대로 학습 진도표다.
 

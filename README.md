@@ -460,12 +460,12 @@ DLT 에 쌓인 거래는 Kafka UI(<http://localhost:8090>)의 `ledger-events.DLT
 | **4 ★** | **순서 깨짐 → 파티션 키 → 리밸런싱** | ✅ `step-4` |
 | **5 ★** | **기록을 처음부터 다시 계산하기 & 중복 방지** | ✅ `step-5` — 1차 완결 |
 | 6 | `fraud-service` 나중에 합류 | 2차 |
-| 7 | 실패 처리 — 재시도, DLT, 사용자 보류, 깨진 메시지 격리 | ✅ [KS-35](docs/issues/KS-35-failure-handling.md) — `dev` 반영, 태그 전 |
+| 7 | 실패 처리 — 재시도, DLT, 사용자 보류, 깨진 메시지 격리 | ✅ `step-7` — [KS-35](docs/issues/KS-35-failure-handling.md) |
 | - | 처리량 실험 — 워커 · 파티션 · 배치, 느린 처리가 일으키는 리밸런싱 | 대기 → [KS-29](docs/issues/KS-29-throughput-experiment.md) |
 
 단계별 작업 분해 → [04. 작업 로드맵](docs/planning/04-roadmap.md) · 1차 이후 고친 것 → [06. 진행 기록 9절](docs/planning/06-progress.md#9-1차-완결-이후--다시-검증하며-고친-것)
 
-`main` 에 머지한 단계마다 태그를 붙여 두었습니다(`step-0` ~ `step-5`). 7단계는 아직 `dev` 에만 있어 태그가 없습니다. 특정 단계의 코드를 보고 싶다면:
+`main` 에 머지한 단계마다 태그를 붙여 두었습니다(`step-0` ~ `step-5`, `step-7`). 6단계는 아직 하지 않아 `step-6` 은 없습니다. 특정 단계의 코드를 보고 싶다면:
 
 ```bash
 git checkout step-4
