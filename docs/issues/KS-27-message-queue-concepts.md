@@ -6,7 +6,7 @@
 | **상태** | DONE |
 | **단계** | - (문서 보강) |
 | **브랜치** | `docs/KS-27-message-queue-concepts` |
-| **PR** | - |
+| **PR** | [#37](https://github.com/ytw9699/kafka_study/pull/37) |
 
 ## 배경
 
