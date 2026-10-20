@@ -20,6 +20,7 @@
 | [04. 작업 로드맵](planning/04-roadmap.md) | 0~7단계 세부 작업 분해와 확인 방법 |
 | [05. DB로 직접 만들면](planning/05-why-not-diy.md) | DIY 대응표, split-brain, fencing token |
 | **[06. 진행 기록](planning/06-progress.md)** | **1차 완결 회고 — 복기용. 여기부터 읽어도 된다** |
+| [07. 메시지 큐](planning/07-message-queue.md) | 출발점(Redis Pub/Sub), 큐를 쓰는 이유와 대가, 전달 보장, 재시도·DLQ, 분산 트랜잭션 |
 
 ---
 
@@ -38,6 +39,7 @@
 | [KS-13](issues/KS-13-pivot-ledger.md) | **도메인 전환 — 포인트 지갑 원장** | DOCS | DONE |
 | [KS-24](issues/KS-24-progress-record.md) | 진행 기록 신설 및 문서-구현 불일치 정정 | DOCS | DONE |
 | [KS-25](issues/KS-25-tool-comparison-fix.md) | 도구 비교표 정정 — "Kafka뿐"은 과장이었다 | DOCS | DONE |
+| [KS-27](issues/KS-27-message-queue-concepts.md) | 메시지 큐 개념 문서 신설 및 문구 정리 | DOCS | DONE |
 
 ### 단계별 (0~5단계 · 1차 완결)
 

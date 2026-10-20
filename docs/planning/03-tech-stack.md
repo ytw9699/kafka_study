@@ -27,7 +27,7 @@
 
 **선택 이유**
 - Kafka 코드 자체(`KafkaTemplate`, `@KafkaListener`)는 Java와 거의 동일하게 생겼다. 쿠버네티스처럼 새로운 개념 레이어가 추가되는 게 아니라 **문법만 바뀌므로 Kafka 학습을 잡아먹지 않는다.**
-- 국내 백엔드 채용 시장에서 Kotlin + Spring Boot 조합이 실질적 가산점. 다수 기업이 Kotlin으로 전환했고 "Kotlin 경험 우대"가 흔하다.
+- `sealed interface` 로 이벤트 타입(`POINT_EARNED` / `POINT_SPENT`)을 **닫힌 집합**으로 표현할 수 있다. `when` 분기에서 빠진 타입을 컴파일러가 잡아준다.
 - Spring Boot의 Kotlin 지원이 공식적으로 1급이다 (전 스타터 호환 + Kotlin 전용 확장 함수 제공).
 
 **알려진 마찰: Kotlin + JPA**
@@ -38,7 +38,7 @@ Kotlin은 클래스/프로퍼티가 기본 `final`인데 JPA는 프록시 생성
 
 **규칙**: **엔티티는 `data class`로 만들지 않는다.** `data class`가 생성하는 `equals`/`hashCode`가 lazy 프록시와 충돌한다. `data class`는 Kafka 메시지 DTO에만 사용한다.
 
-> 이 세팅 자체가 실무 자산이다. Kotlin+JPA를 제대로 구성해본 경험은 채용 과정에서도 자주 물어보는 지점.
+> Kotlin으로 JPA를 쓰면 반드시 마주치는 지점이라, 처음부터 규칙으로 고정했다.
 
 ---
 
@@ -170,7 +170,7 @@ Postgres 인스턴스는 하나지만 **DB를 분리**한다. MSA에서 서비�
 | 탈락 | 대신 선택 | 이유 |
 |---|---|---|
 | Kubernetes | Docker Compose | Kafka 학습이 쿠버 학습에 묻힘. 프로젝트 범위에서 제외 |
-| Java | Kotlin | 채용 시장 가산점, Kafka 코드는 사실상 동일 |
+| Java | Kotlin | Kafka 코드는 사실상 동일. `sealed interface` 로 이벤트 타입을 닫힌 집합으로 표현 |
 | `ConcurrentHashMap` | JPA + DB | 멱등성 문제가 보이지 않고 지나감 |
 | H2 (파일/인메모리) | PostgreSQL | **파일 모드는 한 JVM만 열 수 있어 워커 3개 실험이 불가능.** upsert 방언도 다름 |
 | 인메모리 + 기동 시 `seekToBeginning` | 영속 DB + 명시적 재생 API | 실무 패턴이 아니고 "매번 전체를 읽는다"는 잘못된 감각을 남김 |
@@ -179,7 +179,7 @@ Postgres 인스턴스는 하나지만 **DB를 분리**한다. MSA에서 서비�
 | Kafka Streams | 일반 `@KafkaListener` | 진입장벽이 높고 핵심과 별개 |
 | DB 큐 직접 구현 | Kafka | 학습 가치는 크지만 시간 비용이 큼. [05. 문서](05-why-not-diy.md)로 대신 |
 | 바닐라 JS | Vue 3 | SSE 생명주기 + 실시간 차트 상태 관리 |
-| Maven | Gradle (Kotlin DSL) | 최근 채용공고 선호도, Kotlin과의 정합성 |
+| Maven | Gradle (Kotlin DSL) | 빌드 스크립트도 같은 언어로 작성, 멀티모듈 구성이 간결 |
 
 ---
 
