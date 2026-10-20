@@ -69,8 +69,9 @@
 | [KS-41](issues/KS-41-full-doc-reread.md) | 전체 문서 다시 읽기 — 하이라이트 · 로드맵 · 설계서 · 규칙의 낡은 곳 정정 | DOCS | DONE |
 | [KS-42](issues/KS-42-expected-balance-history.md) | 기대 잔액 계산을 피드 표시와 분리, replay 뒤 잘못 뜨던 경고 수정 | FIX | DONE |
 | [KS-43](issues/KS-43-default-branch-fact.md) | "GitHub 첫 화면은 main" 서술 정정 — 기본 브랜치는 dev | DOCS | DONE |
-| [KS-44](issues/KS-44-reviewer-guide.md) | README 에 "5분 코스"와 코드 지도 추가 | DOCS | DONE |
+| [KS-44](issues/KS-44-readme-guide.md) | README 에 "5분 코스"와 코드 지도 추가 | DOCS | DONE |
 | [KS-45](issues/KS-45-neutral-wording.md) | 문서 표현 정리 — 읽는 사람을 특정하지 않는다 | DOCS | DONE |
+| [KS-46](issues/KS-46-study-wording.md) | 문서 표현 정리 — 학습 기록에 맞는 말로 | DOCS | DONE |
 
 ### 단계별
 
