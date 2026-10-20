@@ -63,6 +63,7 @@
 | [KS-36](issues/KS-36-claude-md-failure-handling.md) | 작업 규칙(CLAUDE.md)에 7단계 완료 반영 | DOCS | DONE |
 | [KS-37](issues/KS-37-doc-sync-after-failure-handling.md) | 7단계 결과를 전체 문서에 반영, 실험 이름 통일, README 흐름 정리 | DOCS | DONE |
 | [KS-38](issues/KS-38-step7-tag-docs.md) | 문서의 "7단계 태그 전" 표기를 `step-7` 로, 문서 보강을 `main` 에 반영 | DOCS | DONE |
+| [KS-39](issues/KS-39-readme-screenshots.md) | README 에 실험 화면 스크린샷 추가 | DOCS | DONE |
 | [KS-40](issues/KS-40-readme-idempotent-cmd.md) | README 실험 C 명령에 `cd backend` 누락 | DOCS | DONE |
 | [KS-41](issues/KS-41-full-doc-reread.md) | 전체 문서 다시 읽기 — 하이라이트 · 로드맵 · 설계서 · 규칙의 낡은 곳 정정 | DOCS | DONE |
 
