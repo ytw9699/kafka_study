@@ -6,7 +6,7 @@
 | **상태** | DONE |
 | **단계** | - (문서 보강) |
 | **브랜치** | `docs/KS-28-readme-onboarding` |
-| **PR** | - |
+| **PR** | [#38](https://github.com/ytw9699/kafka_study/pull/38) |
 
 ## 배경
 
