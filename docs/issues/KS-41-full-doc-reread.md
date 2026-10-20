@@ -8,7 +8,7 @@
 | **상태** | DONE |
 | **단계** | - (문서 보강) |
 | **브랜치** | `docs/KS-41-full-doc-reread` |
-| **PR** | - |
+| **PR** | [#51](https://github.com/ytw9699/kafka_study/pull/51) |
 
 ## 배경
 
@@ -31,6 +31,7 @@ KS-37 은 "예정 · 미착수" 같은 낱말 검색으로 찾았기 때문에, 
 | 02. 설계서 | 3-3 워커 종료 → `session.timeout` 을 기다리는 그림인데, 정상 종료는 몇 초 만에 재배정됨 | 그림은 강제 종료로, 정상 종료는 주석으로 |
 | 02. 설계서 | 3-4 "**5단계에서는** `processed_event` 를 미리 만들지 않는다" — 5단계가 바로 그것을 만드는 단계 | 5단계 안의 순서(replay → rebuild → 멱등)로 |
 | [01. 문서 구조 규칙](../conventions/01-doc-structure.md) | 디렉토리 그림에 `planning/` 01~03 만, 티켓 예시는 존재하지 않는 `KS-1-infra-docker-compose.md` | 01~07 과 실제 파일명으로 |
+| [03. 브랜치 전략](../conventions/03-branch-strategy.md) | 브랜치 이름 예시가 실제와 다른 번호(`KS-1-infra…`, `KS-5-offset…`, `KS-9-troubleshooting…`) | 실제 브랜치(KS-2 · KS-20 · KS-37)로 |
 
 ### 빠져 있던 것
 

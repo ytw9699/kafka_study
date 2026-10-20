@@ -40,9 +40,9 @@ feature      ●╱        ●──╱        ●╱                  티켓 �
 
 예시:
 ```
-feature/KS-1-infra-docker-compose
-experiment/KS-5-offset-reset-replay
-docs/KS-9-troubleshooting-advertised-listeners
+feature/KS-2-infra-docker-compose
+experiment/KS-20-order-broken
+docs/KS-37-doc-sync-after-failure-handling
 ```
 
 ## 커밋 메시지
