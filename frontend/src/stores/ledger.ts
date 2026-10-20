@@ -2,20 +2,30 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { LedgerEvent } from '../api/types'
 
-/** 화면에 유지할 최대 이벤트 수. 이보다 오래된 것은 버린다. */
+/** 피드에 표시할 최대 이벤트 수. 이보다 오래된 것은 **피드에서만** 버린다. */
 const MAX_FEED = 300
 
 export const useLedgerStore = defineStore('ledger', () => {
-  /** SSE 로 받은 이벤트. 최신이 앞. */
+  /** 피드 표시용. 최신이 앞. 최대 [MAX_FEED] 개, [clear] 로 비울 수 있다. */
   const events = ref<LedgerEvent[]>([])
 
+  /**
+   * 기대 잔액 계산용 — 화면을 켠 뒤 받은 **모든** 거래.
+   *
+   * 예전에는 피드 목록(최근 300개)으로 기대 잔액을 계산해서, 거래가 300건을 넘거나
+   * 피드를 [지우기] 하면 **기대 잔액 자체가 틀어졌다** (KS-42). 그래서 둘을 나눴다.
+   */
+  const history = ref<LedgerEvent[]>([])
+
   function push(event: LedgerEvent) {
+    history.value.push(event)
     events.value.unshift(event)
     if (events.value.length > MAX_FEED) {
       events.value.length = MAX_FEED
     }
   }
 
+  /** 피드 표시만 비운다. 기대 잔액 계산에는 영향이 없다. */
   function clear() {
     events.value = []
   }
@@ -43,7 +53,7 @@ export const useLedgerStore = defineStore('ledger', () => {
    * 워커가 순서를 어겼을 때 그 차이가 드러난다.
    */
   const expectedBalances = computed(() => {
-    const ordered = [...events.value].sort((a, b) =>
+    const ordered = [...history.value].sort((a, b) =>
       a.occurredAt < b.occurredAt ? -1 : a.occurredAt > b.occurredAt ? 1 : 0,
     )
 
@@ -84,5 +94,23 @@ export const useLedgerStore = defineStore('ledger', () => {
     return [...set].sort()
   }
 
-  return { events, push, clear, expectedBalances, countByPartition, partitionsOf }
+  /**
+   * 화면을 켜기 **전**에 이미 기록된 거래가 있는 파티션.
+   *
+   * 화면이 파티션에서 처음 받은 거래의 offset 이 0 보다 크면, 그 앞의 거래는 받지 못했다는 뜻이다.
+   * 그 파티션의 사용자는 기대 잔액이 부족하게 계산된다.
+   *
+   * 예전에는 "워커가 처리한 건수 > 화면이 받은 건수"로 판단해서, replay 로 **같은 거래를 두 번 처리**하면
+   * 놓친 거래가 없는데도 경고가 떴다 (KS-42). replay 는 Kafka 에 새 기록을 만들지 않으므로 offset 기준은 흔들리지 않는다.
+   */
+  const missedPartitions = computed(() => {
+    const first = new Map<number, number>()
+    for (const e of history.value) {
+      const seen = first.get(e.partition)
+      if (seen === undefined || e.offset < seen) first.set(e.partition, e.offset)
+    }
+    return [...first.entries()].filter(([, offset]) => offset > 0).map(([p]) => p).sort((a, b) => a - b)
+  })
+
+  return { events, push, clear, expectedBalances, countByPartition, partitionsOf, missedPartitions }
 })

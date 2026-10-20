@@ -53,6 +53,7 @@
 | [KS-13](issues/KS-13-pivot-ledger.md) | **도메인 전환 — 포인트 지갑 원장** | DOCS | DONE |
 | [KS-24](issues/KS-24-progress-record.md) | 진행 기록 신설 및 문서-구현 불일치 정정 | DOCS | DONE |
 | [KS-25](issues/KS-25-tool-comparison-fix.md) | 도구 비교표 정정 — "Kafka뿐"은 과장이었다 | DOCS | DONE |
+| KS-26 | 개인 레포 정리 작업 (문서 없음) | CHORE | DONE |
 | [KS-27](issues/KS-27-message-queue-concepts.md) | 메시지 큐 개념 문서 신설 및 문구 정리 | DOCS | DONE |
 | [KS-28](issues/KS-28-readme-onboarding.md) | README 재작성 — 처음 보는 사람이 따라올 수 있게 | DOCS | DONE |
 | [KS-30](issues/KS-30-readme-build-first.md) | README 실행 절차에 "먼저 빌드" 단계 추가 | DOCS | DONE |
@@ -66,6 +67,10 @@
 | [KS-39](issues/KS-39-readme-screenshots.md) | README 에 실험 화면 스크린샷 추가 | DOCS | DONE |
 | [KS-40](issues/KS-40-readme-idempotent-cmd.md) | README 실험 C 명령에 `cd backend` 누락 | DOCS | DONE |
 | [KS-41](issues/KS-41-full-doc-reread.md) | 전체 문서 다시 읽기 — 하이라이트 · 로드맵 · 설계서 · 규칙의 낡은 곳 정정 | DOCS | DONE |
+| [KS-42](issues/KS-42-expected-balance-history.md) | 기대 잔액 계산을 피드 표시와 분리, replay 뒤 잘못 뜨던 경고 수정 | FIX | DONE |
+| [KS-43](issues/KS-43-default-branch-fact.md) | "GitHub 첫 화면은 main" 서술 정정 — 기본 브랜치는 dev | DOCS | DONE |
+| [KS-44](issues/KS-44-reviewer-guide.md) | README 에 "5분 코스"와 코드 지도 추가 | DOCS | DONE |
+| [KS-45](issues/KS-45-neutral-wording.md) | 문서 표현 정리 — 읽는 사람을 특정하지 않는다 | DOCS | DONE |
 
 ### 단계별
 
