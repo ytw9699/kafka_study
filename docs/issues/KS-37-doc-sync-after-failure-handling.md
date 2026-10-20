@@ -8,7 +8,7 @@
 | **상태** | DONE |
 | **단계** | - (문서 보강) |
 | **브랜치** | `docs/KS-37-doc-sync-after-failure-handling` |
-| **PR** | - |
+| **PR** | [#48](https://github.com/ytw9699/kafka_study/pull/48) |
 
 ## 배경
 
