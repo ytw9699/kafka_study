@@ -22,7 +22,7 @@ npm install && npm run dev
 | ③ 사용자별 잔액 | `components/BalancePanel.vue` | **워커 잔액 vs 기대 잔액**, 일치 · 불일치 판정, rebuild · replay 버튼, 실패 처리 모드와 **"보류"** 된 사용자 |
 | ④ 워커 · 파티션 배정 | `components/PartitionBoard.vue` | 워커별 담당 파티션, "놀고 있음" · "정상 종료" · "죽음" 표시 |
 
-## 핵심 장치 — 기대 잔액
+## 가장 중요한 기능 — 기대 잔액
 
 `stores/ledger.ts` 는 SSE(`composables/useSse.ts`)로 받은 거래를 **발생 시각 순으로 정렬해 직접 계산**합니다.
 `stores/balance.ts` 가 워커에게 물어 온 잔액과 비교해, 둘이 다르면 순서가 깨졌거나 거래가 빠졌다는 뜻입니다.

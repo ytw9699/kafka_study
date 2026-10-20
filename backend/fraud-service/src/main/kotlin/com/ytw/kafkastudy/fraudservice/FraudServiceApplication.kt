@@ -3,7 +3,7 @@ package com.ytw.kafkastudy.fraudservice
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 
-/** 부정거래 탐지. 6단계에서 나중에 처음 기동해 과거 전체를 재생한다. */
+/** 이상거래 탐지. 6단계에서 나중에 처음 기동해 과거 전체를 재생한다. */
 @SpringBootApplication
 class FraudServiceApplication
 
