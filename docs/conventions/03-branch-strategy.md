@@ -40,9 +40,9 @@ feature      ●╱        ●──╱        ●╱                  티켓 �
 
 예시:
 ```
-feature/KS-1-infra-docker-compose
-experiment/KS-5-offset-reset-replay
-docs/KS-9-troubleshooting-advertised-listeners
+feature/KS-2-infra-docker-compose
+experiment/KS-20-order-broken
+docs/KS-37-doc-sync-after-failure-handling
 ```
 
 ## 커밋 메시지
@@ -91,6 +91,9 @@ feat: [KS-14] ledger-api 거래 발행 및 SSE 게이트웨이 구현
 한 **학습 단계**(0~7단계)가 통째로 끝나서 동작이 확인됐을 때만.
 **5단계 완료 시점이 1차 완결**이다 (`step-5`). 문서 보강처럼 단계와 무관한 작업은 `dev` 에만 머지한다.
 즉 `main`의 커밋 히스토리를 보면 **학습 진도가 그대로 보이게** 된다.
+
+> **예외 — 첫 화면 문서.** GitHub 에서 처음 보이는 것은 `main` 의 README 다. README 처럼 처음 보는 사람이 읽는 문서를 고쳤다면
+> 단계와 무관해도 `dev` → `main` 으로 반영할 수 있다. 이때 태그는 새로 붙이거나 옮기지 않는다 ([KS-38](../issues/KS-38-step7-tag-docs.md)).
 
 머지 후 태그를 붙인다:
 ```bash

@@ -4,7 +4,7 @@
 
 > **이 문서 한눈에**
 > - 서비스 3개와 Kafka · PostgreSQL 이 어떻게 연결되는지 **그림으로**
-> - 거래 한 건이 화면에 반영되기까지, 그리고 실험 A·B·C 에서 무슨 일이 일어나는지 **순서도로**
+> - 거래 한 건이 화면에 반영되기까지, 그리고 실험 A·B·C·E 에서 무슨 일이 일어나는지 **순서도로**
 > - 토픽 · 이벤트 형식 · API · DB 테이블 · 포트 명세
 
 
@@ -152,7 +152,7 @@ sequenceDiagram
     end
 ```
 
-**핵심**: 세 컨슈머 그룹이 같은 메시지를 **각각** 받는다. 큐였다면 하나만 받는다.
+**핵심**: 컨슈머 그룹마다 같은 메시지를 **각각** 받는다 (지금은 둘, 6단계에서 `fraud-group` 이 합류하면 셋). 큐였다면 하나만 받는다.
 
 ### 3-2. ★ 순서가 깨지면 잔액이 틀린다 *(실험 A, 4단계)*
 
@@ -191,7 +191,7 @@ sequenceDiagram
 ```
 
 > **파티션 키가 왜 존재하는지를 틀린 숫자로 배운다.**
-> `app.partition-key-mode` 설정 한 줄로 재현하고 되돌릴 수 있다.
+> `app.partition-key-mode` 설정 한 줄로 재현한다. 되돌리면 **앞으로 발행되는 거래는** 다시 맞지만, 이미 흩어져 기록된 거래는 그대로 남는다 ([KS-20](../issues/KS-20-order-broken-experiment.md)).
 
 ### 3-3. 워커 장애와 리밸런싱 *(실험 B, 4단계)*
 
@@ -209,7 +209,7 @@ sequenceDiagram
     W2->>FE: 담당 [1]
     W3->>FE: 담당 [2]
 
-    Note over W3: worker-3 종료 💀
+    Note over W3: worker-3 강제 종료 (kill -9) 💀
     K->>K: session.timeout 초과 → 리밸런싱
     K->>W1: 재배정 [0, 2]
     K->>W2: 재배정 [1]
@@ -218,6 +218,8 @@ sequenceDiagram
 
     Note over K,W2: 처리는 중단 없이 계속되고 최종 잔액은 정확하다
 ```
+
+> 정상 종료(`Ctrl+C`)면 워커가 떠나면서 스스로 알리므로 **몇 초** 만에 재배정된다. 위 그림의 `session.timeout`(기본 45초)을 기다리는 것은 **강제 종료**일 때다 ([KS-21](../issues/KS-21-rebalance-experiment.md)).
 
 ### 3-4. 원장 재구축과 중복 적용 *(실험 C, 5단계)*
 
@@ -251,8 +253,57 @@ sequenceDiagram
     Note over BW,DB: 근본 해결 — processed_event(eventId) 로 중복 차단
 ```
 
-> **5단계에서는 `processed_event` 테이블을 미리 만들지 않는다.**
-> 위의 😱를 먼저 겪어야 멱등성의 필요가 몸에 남는다.
+> **`processed_event` 테이블은 replay 의 😱를 겪은 뒤에 만든다** (5단계 안에서 순서: replay → rebuild → 멱등).
+> 먼저 겪어야 멱등성의 필요가 몸에 남는다. 멱등 처리는 지금도 기본값이 꺼져 있다 (`APP_IDEMPOTENT`).
+
+### 3-5. 처리에 실패하면 *(실험 E · F, 7단계)*
+
+같은 사용자: ① 5,000 적립 ② 3,000 사용 (**5초 일시 실패**) ③ 4,000 사용. 정답은 잔액 2,000, ③ 거절.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant P0 as partition-0
+    participant BW as balance-worker
+    participant R as ledger-events-retry
+    participant DLT as ledger-events.DLT
+    participant DB as balancedb
+
+    rect rgb(255, 235, 235)
+        Note over P0,DB: ❌ NON_BLOCKING — 재시도 토픽 (실험 E)
+        P0->>BW: ① 적립 5,000
+        BW->>DB: 0 → 5,000
+        P0->>BW: ② 사용 3,000 — 실패
+        BW->>R: ② 를 뒤로 미룸
+        P0->>BW: ③ 사용 4,000
+        BW->>DB: 5,000 → 1,000   ← ③ 이 먼저
+        R->>BW: ② 재시도
+        BW->>DB: 잔액 1,000 < 3,000 → 거절
+        Note over DB: 워커 1,000 / 기대 2,000 💥
+    end
+
+    rect rgb(235, 250, 235)
+        Note over P0,DB: ✅ BLOCKING — 그 자리에서 재시도 (파티션이 기다린다)
+        P0->>BW: ② 사용 3,000 — 실패, 2초 뒤 다시 … 성공
+        BW->>DB: 5,000 → 2,000
+        P0->>BW: ③ 사용 4,000
+        BW->>DB: 잔액 2,000 < 4,000 → 거절
+        Note over DB: 2,000 ✅ — 대가: 그동안 같은 파티션의 다른 사용자도 기다림 (실험 F)
+    end
+
+    rect rgb(240, 240, 255)
+        Note over P0,DB: BLOCKING + 영구 실패 — DLT + 사용자 보류
+        P0->>BW: ② 사용 3,000 — 영구 실패
+        BW->>DLT: ② 를 원인과 함께 보관
+        BW->>DB: 이 사용자 보류 (quarantined_user)
+        P0->>BW: ③ 사용 4,000
+        BW->>DLT: 보류된 사용자 → ③ 도 순서대로 DLT
+        Note over DB: 이 사용자만 멈추고 다른 사용자는 계속 흐른다
+    end
+```
+
+> 재시도 토픽은 일반적으로 권장되는 패턴이지만, **순서가 결과를 바꾸는 일**에서는 잔액을 깨뜨린다.
+> 영구 실패를 DLT 로 빼기만 하면 ③ 이 ② 를 건너뛴 채 처리되므로, **그 사용자를 보류**해 뒤 거래도 함께 뺀다. → [KS-35](../issues/KS-35-failure-handling.md)
 > Kafka의 기본 전달 보장은 **at-least-once**이며, 정상 운영 중 컨슈머 재시작·리밸런싱에서도 발생할 수 있는 일이다.
 
 ---

@@ -18,11 +18,15 @@ docs/
 │   ├── 02-ticket.md            # 티켓 번호 체계
 │   └── 03-branch-strategy.md   # 브랜치 / PR 전략
 ├── planning/               # 기획·설계 문서 (프로젝트 전체 관점)
-│   ├── 01-planning.md
-│   ├── 02-architecture.md
-│   └── 03-tech-stack.md
+│   ├── 01-planning.md          # 기획서 — 왜, 무엇을, 주장의 강도
+│   ├── 02-architecture.md      # 설계서
+│   ├── 03-tech-stack.md        # 기술 스택 결정서
+│   ├── 04-roadmap.md           # 단계별 작업 분해 (계획)
+│   ├── 05-why-not-diy.md       # DB로 직접 만들면
+│   ├── 06-progress.md          # 진행 기록 (실제로 어떻게 됐나)
+│   └── 07-message-queue.md     # 메시지 큐 개념
 ├── issues/                 # 티켓 (Jira 이슈 대체) — 작업 단위 하나 = 파일 하나
-│   └── KS-1-infra-docker-compose.md
+│   └── KS-2-infra-docker-compose.md
 └── troubleshooting/        # 삽질 기록 — 문제 / 원인 / 해결
     └── TS-1-....md
 ```
