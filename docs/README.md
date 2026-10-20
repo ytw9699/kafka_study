@@ -59,6 +59,7 @@
 | [KS-32](issues/KS-32-docs-navigation.md) | 문서 이동 링크 · 한눈 요약 추가, 낡은 설계 내용 갱신, README 에 기간 명시 | DOCS | DONE |
 | [KS-33](issues/KS-33-readme-architecture-diagram.md) | README 맨 앞에 한눈에 보는 아키텍처 그림 추가 | DOCS | DONE |
 | [KS-34](issues/KS-34-plain-words-and-doc-audit.md) | README 를 쉬운 말로 다시 쓰기, 전체 문서 점검 | DOCS | DONE |
+| [KS-36](issues/KS-36-claude-md-failure-handling.md) | 작업 규칙(CLAUDE.md)에 7단계 완료 반영 | DOCS | DONE |
 
 ### 단계별 (0~5단계 · 1차 완결)
 
