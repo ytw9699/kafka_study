@@ -8,7 +8,7 @@
 | **상태** | DONE |
 | **단계** | - (문서 보강) |
 | **브랜치** | `docs/KS-36-claude-md-failure-handling` |
-| **PR** | - |
+| **PR** | [#47](https://github.com/ytw9699/kafka_study/pull/47) |
 
 ## 배경
 
