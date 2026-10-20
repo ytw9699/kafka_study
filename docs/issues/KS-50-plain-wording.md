@@ -8,7 +8,7 @@
 | **상태** | DONE |
 | **단계** | - (문서 정리) |
 | **브랜치** | `docs/KS-50-plain-wording` |
-| **PR** | - |
+| **PR** | [#62](https://github.com/ytw9699/kafka_study/pull/62) |
 
 ## 배경
 
