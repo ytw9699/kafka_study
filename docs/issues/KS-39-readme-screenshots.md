@@ -8,7 +8,7 @@
 | **상태** | DONE |
 | **단계** | - (문서 보강) |
 | **브랜치** | `docs/KS-39-readme-screenshots` |
-| **PR** | - |
+| **PR** | [#](https://github.com/ytw9699/kafka_study/pull/) |
 
 ## 배경
 
