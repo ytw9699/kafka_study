@@ -10,6 +10,10 @@
 | **브랜치** | `docs/KS-10-architecture-diagrams` |
 | **PR** | [#3](https://github.com/ytw9699/kafka_study/pull/3) |
 
+> 📌 **주제를 바꾸기 전의 기록입니다.** 이 프로젝트는 처음에 "주문 · 매출"로 시작했다가
+> [KS-13](KS-13-pivot-ledger.md)에서 **포인트 적립 · 사용**으로 바꿨습니다. 아래 내용의 주문 · 매출 · `order-service` 등은 그 이전 설계입니다.
+
+
 ## 배경
 
 [KS-1](KS-1-project-setup-docs.md)에서 작성한 설계서에 구조도가 ASCII 아트 하나뿐이었고, 그마저도 **백엔드-Kafka 구간만** 그려져 있었다.

@@ -8,7 +8,7 @@
 | **상태** | DONE |
 | **단계** | - (보강) |
 | **브랜치** | `fix/KS-31-worker-status-and-pins` |
-| **PR** | - |
+| **PR** | [#41](https://github.com/ytw9699/kafka_study/pull/41) |
 
 ## 배경
 
