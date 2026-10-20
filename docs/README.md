@@ -66,6 +66,12 @@
 남은 **6~7단계(2차)** 는 [로드맵](planning/04-roadmap.md)에 분해되어 있으며, 착수 시점에 티켓으로 발급한다.
 전체 회고는 [06. 진행 기록](planning/06-progress.md) 참조.
 
+### 대기
+
+| 티켓 | 제목 | 타입 | 상태 |
+|---|---|---|---|
+| [KS-29](issues/KS-29-throughput-experiment.md) | 처리량 실험 — 워커 · 파티션 · 배치가 처리 속도를 어떻게 바꾸는가 | EXPERIMENT | TODO |
+
 ### 취소됨
 
 [KS-13](issues/KS-13-pivot-ledger.md)의 도메인 전환으로 폐기. **번호는 재사용하지 않는다.**
