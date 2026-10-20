@@ -62,6 +62,7 @@
 | [KS-34](issues/KS-34-plain-words-and-doc-audit.md) | README 를 쉬운 말로 다시 쓰기, 전체 문서 점검 | DOCS | DONE |
 | [KS-36](issues/KS-36-claude-md-failure-handling.md) | 작업 규칙(CLAUDE.md)에 7단계 완료 반영 | DOCS | DONE |
 | [KS-37](issues/KS-37-doc-sync-after-failure-handling.md) | 7단계 결과를 전체 문서에 반영, 실험 이름 통일, README 흐름 정리 | DOCS | DONE |
+| [KS-38](issues/KS-38-step7-tag-docs.md) | 문서의 "7단계 태그 전" 표기를 `step-7` 로, 문서 보강을 `main` 에 반영 | DOCS | DONE |
 
 ### 단계별
 
@@ -84,7 +85,7 @@
 | [KS-35](issues/KS-35-failure-handling.md) | ★ 실패 처리 — 재시도 · DLT · 사용자 보류 · 깨진 메시지 격리 (실험 E · F) | EXPERIMENT | 7단계 (2차) | DONE |
 
 **1차 목표(0~5단계) 완결.** 태그 `step-0` ~ `step-5`.
-**7단계(2차)도 끝났다.** 아직 `dev` 에만 있어 태그는 없다.
+**7단계(2차)도 끝났다.** 태그 `step-7`.
 
 남은 **6단계(2차)** 는 [로드맵](planning/04-roadmap.md)에 분해되어 있으며, 착수 시점에 티켓으로 발급한다.
 전체 회고는 [06. 진행 기록](planning/06-progress.md) 참조.
