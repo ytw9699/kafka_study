@@ -74,6 +74,7 @@
 | [KS-46](issues/KS-46-study-wording.md) | 문서 표현 정리 — 학습 기록에 맞는 말로 | DOCS | DONE |
 | [KS-47](issues/KS-47-ks43-judgement.md) | KS-43 "판단" 항목에 이후 `main` 반영 사실 추가 | DOCS | DONE |
 | [KS-48](issues/KS-48-section-wording.md) | 문서의 "N절" 표현을 "N번"으로 | DOCS | DONE |
+| [KS-49](issues/KS-49-intro-wording.md) | README 첫 소개 문구 정리 | DOCS | DONE |
 
 ### 단계별
 
