@@ -1,5 +1,7 @@
 # TS-2: 역직렬화 불가 메시지 하나가 컨슈머 전체를 멈춘다 (poison pill)
 
+[← 문서 목록](../README.md) · [README](../../README.md)
+
 | | |
 |---|---|
 | **발생 단계** | 3단계 — [KS-16](../issues/KS-16-balance-worker.md) |

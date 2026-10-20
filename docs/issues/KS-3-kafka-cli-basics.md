@@ -1,5 +1,7 @@
 # KS-3: Kafka CLI 실습 — 큐와 다른 지점 확인
 
+[← 문서 목록](../README.md) · [README](../../README.md)
+
 | | |
 |---|---|
 | **타입** | EXPERIMENT |
