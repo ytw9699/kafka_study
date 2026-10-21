@@ -54,7 +54,7 @@ code {
 
 hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
 
-/* 파티션 뱃지 — 이 프로젝트에서 가장 중요한 시각 장치 */
+/* 파티션 뱃지 — 이 프로젝트의 핵심 시각 장치 */
 .badge {
   display: inline-block;
   padding: 1px 7px;
