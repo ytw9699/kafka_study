@@ -177,7 +177,7 @@ sequenceDiagram
             P0->>W1: ① 적립 5,000
             W1->>DB: 잔액 1,000 → 6,000
         end
-        Note over DB: 최종 6,000원<br/>기대값 3,000원 💥
+        Note over DB: 최종 6,000원<br/>기대값 3,000원
     end
 
     rect rgb(235, 250, 235)
@@ -238,7 +238,7 @@ sequenceDiagram
         BW->>K: seekToBeginning
         K-->>BW: offset 0부터 다시
         BW->>DB: 잔액 누적
-        Note over DB: user-42 = 6,000원 😱<br/>포인트가 두 배가 됐다
+        Note over DB: user-42 = 6,000원<br/>포인트가 두 배가 됐다
     end
 
     rect rgb(235, 250, 235)
@@ -253,7 +253,7 @@ sequenceDiagram
     Note over BW,DB: 근본 해결 — processed_event(eventId) 로 중복 차단
 ```
 
-> **`processed_event` 테이블은 replay 의 😱를 겪은 뒤에 만든다** (5단계 안에서 순서: replay → rebuild → 멱등).
+> **`processed_event` 테이블은 replay 로 잔액이 두 배가 되는 문제를 겪은 뒤에 만든다** (5단계 안에서 순서: replay → rebuild → 멱등).
 > 먼저 겪어야 멱등성이 왜 필요한지 확실히 알게 된다. 멱등 처리는 지금도 기본값이 꺼져 있다 (`APP_IDEMPOTENT`).
 
 ### 3-5. 처리에 실패하면 *(실험 E · F, 7단계)*
@@ -279,7 +279,7 @@ sequenceDiagram
         BW->>DB: 5,000 → 1,000   ← ③ 이 먼저
         R->>BW: ② 재시도
         BW->>DB: 잔액 1,000 < 3,000 → 거절
-        Note over DB: 워커 1,000 / 기대 2,000 💥
+        Note over DB: 워커 1,000 / 기대 2,000
     end
 
     rect rgb(235, 250, 235)
@@ -335,7 +335,7 @@ flowchart LR
 | `PartitionBoard` ★ | 워커별 담당 파티션, 마지막 하트비트 | **리밸런싱이 실시간으로 보이는 화면** |
 
 > `BalancePanel`은 프론트가 이벤트를 직접 합산한 **기대 잔액**을 함께 표시한다.
-> 실험 A에서 워커가 계산한 잔액과 기대 잔액이 **어긋나는 것**이 이 프로젝트의 가장 중요한 장면이다.
+> 실험 A에서 워커가 계산한 잔액과 기대 잔액이 **어긋나는 것**이 이 프로젝트의 핵심 장면이다.
 
 ### 디렉토리 구조
 
@@ -452,7 +452,7 @@ SERVER_PORT=8093 ./gradlew :balance-worker:bootRun
 | retention | 기본 7일 | 학습 중 재생이 가능해야 하므로 충분 |
 | 값 형식 | JSON | 기초 단계. Avro/Schema Registry는 범위 밖 |
 
-### 파티션 키가 이 프로젝트에서 가장 중요한 이유
+### 파티션 키가 이 프로젝트의 핵심인 이유
 
 Kafka는 **파티션 내부에서만** 순서를 보장한다. 토픽 전체 순서는 보장하지 않는다.
 
@@ -636,7 +636,7 @@ data: { "eventId": "...", "eventType": "POINT_EARNED", "userId": "user-42",
 #### `POST /api/balance/replay` — 재생 *(5단계 실험용)*
 
 잔액 테이블을 **비우지 않고** offset만 되감는다.
-→ 같은 거래가 두 번 적용되어 **포인트가 두 배가 된다.** 😱
+→ 같은 거래가 두 번 적용되어 **포인트가 두 배가 된다.**
 
 > **왜 CLI `--reset-offsets`가 아니라 API인가**
 >
@@ -739,7 +739,7 @@ DO UPDATE SET balance        = user_balance.balance + :delta,
 | 최초 기동 | offset 0 (`auto-offset-reset: earliest`) | 비어 있음 |
 | 재기동 (평상시) | 커밋된 offset에서 이어서 | 유지 |
 | `POST /rebuild` | offset 0 (명시적 seek) | **비움** |
-| `POST /replay` | offset 0 (명시적 seek) | **유지** → 두 배 😱 |
+| `POST /replay` | offset 0 (명시적 seek) | **유지** → 두 배 |
 
 "상태는 로그로부터 재구축된다"는 발상은 `rebuild`를 누를 때마다 체험한다.
 **자동이 아니라 명시적이므로 정상 동작에 대한 감각을 왜곡하지 않는다.**
