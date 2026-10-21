@@ -54,7 +54,7 @@
 | 최초 기동 (3단계) | offset 0 (`auto-offset-reset`) | 비어 있음 |
 | 재기동 (평상시) | 커밋된 offset에서 이어서 | 유지 |
 | `POST /api/stats/rebuild` | offset 0 (명시적 seek) | **비움** |
-| `POST /api/stats/replay` | offset 0 (명시적 seek) | **유지** → 중복 😱 |
+| `POST /api/stats/replay` | offset 0 (명시적 seek) | **유지** → 중복 |
 
 ### 🔴 4단계 원래 설계는 애초에 동작하지 않았다
 
