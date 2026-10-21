@@ -79,6 +79,7 @@
 | [KS-51](issues/KS-51-basic-concepts-heading.md) | README 3번 제목을 "기초 개념"으로 | DOCS | DONE |
 | [KS-52](issues/KS-52-drop-surprise-label.md) | README 4번의 "가장 의외였던 것" 꼬리표 제거 | DOCS | DONE |
 | [KS-53](issues/KS-53-wording-touchup.md) | 문서 다듬기 | DOCS | DONE |
+| [KS-54](issues/KS-54-readme-server-wording.md) | README 첫 설명의 "직원" 비유를 "서버"로 | DOCS | DONE |
 
 ### 단계별
 
